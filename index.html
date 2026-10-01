@@ -1,0 +1,796 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>簡報風格工坊</title>
+<meta name="description" content="馬克老師的 NotebookLM 簡報風格圖鑑與 YAML 設計框架產生器">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@700;900&family=LXGW+WenKai+TC:wght@400;700&family=Huninn&family=IBM+Plex+Mono:wght@400;600&family=Bebas+Neue&display=swap">
+<style>
+/* Layout: 切割墊般的灰綠工作台；上方圖鑑卡片網格，下方左表單＋右 YAML 輸出雙欄（手機堆疊） */
+:root{
+  --bg:#EDF0EE; --surface:#FFFFFF; --ink:#17201D; --muted:#5B6763; --line:#D2D9D6;
+  --accent:#17695A; --accent-soft:#DDEDE8; --code-bg:#F4F6F5; --warn:#A4541A;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1513; --surface:#171F1C; --ink:#E3EAE7; --muted:#93A29D; --line:#28332F;
+    --accent:#5FC7AE; --accent-soft:#1B302A; --code-bg:#121916; --warn:#E8A06A; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1513; --surface:#171F1C; --ink:#E3EAE7; --muted:#93A29D; --line:#28332F;
+  --accent:#5FC7AE; --accent-soft:#1B302A; --code-bg:#121916; --warn:#E8A06A; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65;padding-inline:20px;padding-block:32px 64px}
+.wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+header{display:flex;flex-direction:column;gap:10px;max-width:780px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+h1{font-size:clamp(28px,4vw,42px);line-height:1.15;margin:0;font-weight:900;letter-spacing:-.01em;text-wrap:balance}
+header p{margin:0;color:var(--muted)}
+code{font-family:var(--mono);font-size:.92em;background:var(--code-bg);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:0;padding:0;list-style:none;counter-reset:s}
+.howto li{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:14px;counter-increment:s;display:flex;gap:10px}
+.howto li::before{content:counter(s);flex:none;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:12px;display:grid;place-items:center;margin-top:1px}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tab{font:inherit;font-weight:700;font-size:15px;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:10px 14px;cursor:pointer;margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab small{font-family:var(--mono);font-weight:400;font-size:11px;margin-left:6px;color:var(--muted)}
+
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filters span{font-size:13px;color:var(--muted);margin-right:4px}
+.chip{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 13px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.card .pvbox{padding:12px 12px 0}
+.meta{padding:14px 18px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
+.meta h2{margin:0;font-size:18px;font-weight:700;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.meta h2 small{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:400}
+.mood{margin:0;color:var(--muted);font-size:14px}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}
+dt{color:var(--muted);white-space:nowrap}
+dd{margin:0;min-width:0}
+.from{font-size:13px}
+.swatches{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.swatches i{width:18px;height:18px;border-radius:4px;border:1px solid rgba(128,128,128,.35);display:block}
+.cardbar{display:flex;border-top:1px solid var(--line)}
+.cardbar details{flex:1;min-width:0}
+summary{cursor:pointer;padding:11px 18px;font-weight:500;font-size:14px;color:var(--accent);list-style:none;display:flex;justify-content:space-between;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"＋";font-weight:400}
+details[open] summary::after{content:"－"}
+.use{font:inherit;font-size:13px;font-weight:700;border:0;border-left:1px solid var(--line);background:var(--accent-soft);color:var(--accent);padding:0 16px;cursor:pointer;white-space:nowrap;align-self:stretch}
+.cardbar:has(details[open]){flex-direction:column}
+.cardbar:has(details[open]) .use{border-left:0;border-top:1px solid var(--line);padding:10px 16px}
+.code{position:relative;background:var(--code-bg);border-top:1px solid var(--line)}
+.code pre{margin:0;padding:16px 18px;overflow-x:auto;font-family:var(--mono),var(--sans);font-size:12.5px;line-height:1.6;white-space:pre;tab-size:2}
+.copy{position:absolute;top:8px;right:8px;font:inherit;font-size:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:3px 10px;cursor:pointer}
+.k{color:var(--accent);font-weight:600}
+.c{color:var(--muted)}
+.s{color:var(--warn)}
+
+/* ===== 產生器 ===== */
+.builder{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:900px){.builder{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel h3{margin:0;font-size:16px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.panel h3 small{font-weight:400;font-size:13px;color:var(--muted)}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.fields{grid-template-columns:1fr}}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f.wide{grid-column:1/-1}
+.f label{font-size:13px;color:var(--muted);font-weight:500}
+input,select,textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 10px;width:100%;min-width:0}
+textarea{resize:vertical;line-height:1.5}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.stylepick{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:center}
+@media (max-width:520px){.stylepick{grid-template-columns:1fr}}
+.slides{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none;counter-reset:p}
+.srow{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;grid-template-columns:auto 130px 1fr auto;gap:8px 10px;align-items:start;background:var(--bg);counter-increment:p}
+.srow::before{content:"p" counter(p);font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:600;padding-top:8px;min-width:24px}
+.srow textarea{grid-column:2/4}
+.srow .ops{display:flex;flex-direction:column;gap:4px;grid-row:1/3;grid-column:4}
+.ib{font:inherit;font-size:12px;width:28px;height:26px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:5px;cursor:pointer;display:grid;place-items:center;padding:0}
+.ib:hover{border-color:var(--accent)}
+@media (max-width:520px){.srow{grid-template-columns:auto 1fr auto}.srow input{grid-column:2/3}.srow select{grid-column:2/3}.srow textarea{grid-column:1/3}.srow .ops{grid-column:3;grid-row:1/4}}
+.btn{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--accent);background:var(--accent);color:var(--surface);border-radius:7px;padding:8px 14px;cursor:pointer}
+.btn.ghost{background:var(--surface);color:var(--accent)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.out{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.out pre{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow:auto;max-height:62vh;font-family:var(--mono),var(--sans);font-size:12.5px;line-height:1.6;white-space:pre}
+.stat{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stat b{color:var(--ink)}
+.prompt{background:var(--accent-soft);border-radius:8px;padding:12px 14px;font-size:14px;margin:0}
+.tip{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:12px;margin:0}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+
+/* ========== 預覽縮圖共用 ========== */
+.pv{position:relative;aspect-ratio:16/9;max-width:100%;overflow:hidden;container-type:inline-size;border-radius:6px;isolation:isolate}
+.pv *{box-sizing:border-box}
+.abs{position:absolute}
+.pv .t,.pv .st{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+
+/* 1 合成器控制台 */
+.s-synth{background:linear-gradient(#2A2B30,#19191D);color:#F2F0EA;font-family:"Noto Sans TC",sans-serif}
+.s-synth .rail{left:6cqw;right:6cqw;top:4.5cqw;display:flex;justify-content:space-between}
+.s-synth .knob{display:flex;flex-direction:column;align-items:center;gap:.8cqw;font:600 1.9cqw "IBM Plex Mono",monospace;color:#B9B6AD}
+.s-synth .knob i{width:6.4cqw;height:6.4cqw;border-radius:50%;background:radial-gradient(circle at 35% 30%,#5C5E66,#2A2B30 70%);border:.3cqw solid #0E0F12;position:relative;display:block}
+.s-synth .knob i::after{content:"";position:absolute;left:50%;top:.5cqw;width:.5cqw;height:2.4cqw;background:#FF7A1A;transform-origin:50% 2.7cqw;transform:translateX(-50%) rotate(var(--r,0deg));border-radius:.3cqw}
+.s-synth .lcd{left:6cqw;right:6cqw;top:19cqw;bottom:5.5cqw;background:#0D1712;border:.4cqw solid #070809;border-radius:1cqw;padding:3cqw 3.5cqw;display:flex;flex-direction:column;justify-content:center;gap:1.4cqw;box-shadow:inset 0 0 2.4cqw rgba(124,255,178,.12)}
+.s-synth .l{font:2cqw "IBM Plex Mono",monospace;color:#7CFFB2;opacity:.85}
+.s-synth .t{font-weight:900;font-size:5.6cqw;line-height:1.15}
+.s-synth .st{font-size:2.6cqw;color:#FF9A4D}
+.s-synth .led{right:8cqw;top:22cqw;width:1.6cqw;height:1.6cqw;border-radius:50%;background:#FF7A1A;box-shadow:0 0 1.5cqw #FF7A1A}
+
+/* 2 青色藍圖網格 */
+.s-grid{background-color:#0B1E2D;background-image:linear-gradient(rgba(34,211,238,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.22) 1px,transparent 1px),linear-gradient(rgba(34,211,238,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.09) 1px,transparent 1px);background-size:14cqw 14cqw,14cqw 14cqw,3.5cqw 3.5cqw,3.5cqw 3.5cqw;color:#E6FBFF;font-family:"Noto Sans TC",sans-serif}
+.s-grid .lab{left:6cqw;top:5cqw;font:1.9cqw "IBM Plex Mono",monospace;color:#22D3EE;letter-spacing:.12em}
+.s-grid .t{left:6cqw;right:6cqw;top:9cqw;font-weight:900;font-size:5.8cqw;line-height:1.15}
+.s-grid .st{left:6cqw;right:30cqw;top:24cqw;font-size:2.6cqw;color:#9BE7F5}
+.s-grid .flow{left:6cqw;right:6cqw;bottom:7cqw;display:flex;align-items:center;gap:1.2cqw}
+.s-grid .flow b{flex:1;border:.3cqw solid #22D3EE;padding:1.6cqw .6cqw;text-align:center;font-size:2.3cqw;font-weight:500;background:rgba(11,30,45,.75)}
+.s-grid .flow b small{display:block;font:1.5cqw "IBM Plex Mono",monospace;color:#22D3EE}
+.s-grid .flow i{font-style:normal;color:#22D3EE;font-size:2.6cqw}
+
+/* 3 琥珀金跨境 */
+.s-amber{background:radial-gradient(ellipse at 85% 0%,rgba(245,165,36,.22),transparent 50%),#15120D;color:#FFF7E8;font-family:"Noto Sans TC",sans-serif}
+.s-amber .tag{left:6cqw;top:6cqw;font:2cqw "Bebas Neue",sans-serif;letter-spacing:.15em;color:#15120D;background:#F5A524;padding:.3cqw 1.4cqw}
+.s-amber .t{left:6cqw;right:8cqw;top:11cqw;font-weight:900;font-size:6cqw;line-height:1.15}
+.s-amber .st{left:6cqw;right:8cqw;top:26cqw;font-size:2.6cqw;color:#F5C26B}
+.s-amber svg{left:6cqw;right:6cqw;bottom:13cqw;width:88cqw;height:12cqw}
+.s-amber .ports{left:6cqw;right:6cqw;bottom:5.5cqw;display:flex;justify-content:space-between;font:3.2cqw "Bebas Neue",sans-serif;letter-spacing:.08em;color:#F5A524}
+.s-amber .ports span{display:flex;flex-direction:column;align-items:center;line-height:1}
+.s-amber .ports small{font:500 1.6cqw "Noto Sans TC",sans-serif;color:#C9B48E;letter-spacing:0;margin-top:.6cqw}
+
+/* 4 森林小徑 */
+.s-forest{background:radial-gradient(ellipse at 15% 100%,rgba(122,160,90,.35),transparent 50%),#EEF3E6;color:#2E3B24;font-family:"Huninn","Noto Sans TC",sans-serif}
+.s-forest svg{inset:0;width:100%;height:100%}
+.s-forest .t{left:6cqw;right:38cqw;top:6cqw;font-size:6cqw;line-height:1.2}
+.s-forest .bub{left:6cqw;top:22cqw;max-width:44cqw;background:#fff;border:.35cqw solid #2E3B24;border-radius:2.4cqw;padding:1.2cqw 2cqw;font-size:2.4cqw}
+.s-forest .bub::after{content:"";position:absolute;left:4cqw;bottom:-1.8cqw;border:1cqw solid transparent;border-top:1.6cqw solid #2E3B24;border-bottom:0}
+.s-forest .lv{width:7cqw;height:7cqw;border-radius:50%;background:#4F7A3A;color:#fff;display:grid;place-items:center;font-size:3cqw;border:.5cqw solid #fff;box-shadow:0 .4cqw 0 #2E3B24}
+.s-forest .lv.off{background:#C9D2BB;color:#6E7A62}
+
+/* 5 星空觀星桌 */
+.s-star{background:radial-gradient(1px 1px at 12% 18%,#fff,transparent),radial-gradient(1px 1px at 30% 70%,#fff,transparent),radial-gradient(1.5px 1.5px at 66% 22%,#fff,transparent),radial-gradient(1px 1px at 82% 64%,#fff,transparent),radial-gradient(1px 1px at 50% 40%,#cfe0ff,transparent),radial-gradient(1px 1px at 92% 12%,#fff,transparent),radial-gradient(1px 1px at 22% 46%,#cfe0ff,transparent),radial-gradient(ellipse at 50% 120%,#24346E,transparent 60%),#070B1C;color:#EEF2FF;font-family:"Noto Serif TC",serif}
+.s-star svg{inset:0;width:100%;height:100%}
+.s-star .t{left:6cqw;right:6cqw;top:6cqw;font-weight:900;font-size:6cqw;line-height:1.15}
+.s-star .st{left:6cqw;right:40cqw;top:20cqw;font-family:"Noto Sans TC",sans-serif;font-size:2.5cqw;color:#F2C46D}
+
+/* 6 白板會議室 */
+.s-wb{background:#FBFCFD;color:#1F2A44;font-family:"LXGW WenKai TC","Noto Sans TC",sans-serif}
+.s-wb .frame{inset:0;border:1.4cqw solid #C9CED6;border-bottom-width:3.2cqw;pointer-events:none}
+.s-wb .t{left:6cqw;right:6cqw;top:5.5cqw;font-weight:700;font-size:6cqw;line-height:1.2}
+.s-wb .wave{left:6cqw;top:14.5cqw;width:30cqw;height:2cqw}
+.s-wb .st{left:6cqw;right:6cqw;top:18cqw;font-size:2.7cqw;color:#46516B}
+.s-wb .hats{left:6cqw;right:6cqw;bottom:6.5cqw;display:flex;justify-content:space-between}
+.s-wb .hats span{display:flex;flex-direction:column;align-items:center;gap:.8cqw;font-size:2cqw}
+.s-wb .hats i{width:9cqw;height:5cqw;border-radius:50% 50% .8cqw .8cqw / 90% 90% .8cqw .8cqw;border:.35cqw solid #1F2A44;display:block;position:relative}
+.s-wb .hats i::after{content:"";position:absolute;left:-1.6cqw;right:-1.6cqw;bottom:-.7cqw;height:1cqw;border-radius:1cqw;background:inherit;border:.35cqw solid #1F2A44}
+
+/* 7 戰場地圖 */
+.s-map{background:repeating-radial-gradient(ellipse at 72% 60%,transparent 0 2.4cqw,rgba(230,217,168,.16) 2.4cqw 2.7cqw),repeating-radial-gradient(ellipse at 18% 20%,transparent 0 3cqw,rgba(230,217,168,.1) 3cqw 3.3cqw),#3F4A2B;color:#F1E8C6;font-family:"Noto Serif TC",serif}
+.s-map .coord{left:3cqw;top:2cqw;right:3cqw;display:flex;justify-content:space-between;font:1.6cqw "IBM Plex Mono",monospace;color:rgba(241,232,198,.55)}
+.s-map .t{left:6cqw;right:6cqw;top:7cqw;font-weight:900;font-size:6cqw;line-height:1.15}
+.s-map .st{left:6cqw;right:40cqw;top:21cqw;font-family:"Noto Sans TC",sans-serif;font-size:2.5cqw;color:#D9CC97}
+.s-map .pin{background:#E6D9A8;color:#2B321D;font:2.6cqw "Bebas Neue",sans-serif;letter-spacing:.1em;padding:.6cqw 1.6cqw;border:.3cqw solid #2B321D;box-shadow:.5cqw .5cqw 0 rgba(0,0,0,.35)}
+.s-map .pin small{display:block;font:700 1.7cqw "Noto Sans TC",sans-serif;letter-spacing:0}
+.s-map .flag{width:0;height:0;border-left:3cqw solid #C8553D;border-top:1.6cqw solid transparent;border-bottom:1.6cqw solid transparent}
+.s-map .pole{width:.4cqw;height:6cqw;background:#F1E8C6}
+
+/* 8 公文稽核 */
+.s-doc{background:#FFFFFF;color:#1A1A1A;font-family:"Noto Serif TC",serif}
+.s-doc .paper{inset:0;padding:4.5cqw 7cqw}
+.s-doc .no{font:1.7cqw "IBM Plex Mono",monospace;color:#6B6B6B;display:flex;justify-content:space-between}
+.s-doc .t{font-weight:900;font-size:5.4cqw;text-align:center;margin:2.2cqw 0 1cqw;line-height:1.2}
+.s-doc .rule{height:1.2cqw;border-top:.4cqw solid #B3202A;border-bottom:.15cqw solid #B3202A}
+.s-doc table{width:100%;border-collapse:collapse;margin-top:2.4cqw;font-family:"Noto Sans TC",sans-serif;font-size:2.2cqw}
+.s-doc td{border:.2cqw solid #1A1A1A;padding:1cqw 1.6cqw;vertical-align:top}
+.s-doc td:first-child{width:24%;background:#F2EFE8;font-weight:700;text-align:center}
+.s-doc .seal{right:6cqw;bottom:4.5cqw;width:8.5cqw;height:8.5cqw;border:.5cqw solid #B3202A;color:#B3202A;display:grid;place-items:center;font-weight:900;font-size:2.4cqw;line-height:1.1;text-align:center;transform:rotate(-6deg);background:rgba(255,255,255,.85)}
+
+/* 9 健診儀表 */
+.s-clinic{background:#172026;color:#E9F2F1;font-family:"Noto Sans TC",sans-serif}
+.s-clinic .t{left:6cqw;right:44cqw;top:7cqw;font-weight:900;font-size:5.4cqw;line-height:1.2}
+.s-clinic .st{left:6cqw;right:44cqw;top:22cqw;font-size:2.5cqw;color:#8FB3AE}
+.s-clinic .gauge{right:7cqw;top:7cqw;width:30cqw;height:15cqw;border-radius:15cqw 15cqw 0 0;background:conic-gradient(from 270deg at 50% 100%,#2DD4BF 0 147deg,#2A3A40 147deg 180deg,transparent 180deg);display:grid;place-items:end center}
+.s-clinic .gauge::before{content:"";position:absolute;left:4cqw;right:4cqw;top:4cqw;bottom:0;border-radius:11cqw 11cqw 0 0;background:#172026}
+.s-clinic .gauge b{position:relative;font:7cqw "Bebas Neue",sans-serif;color:#2DD4BF;line-height:.9}
+.s-clinic .bars{left:6cqw;right:7cqw;bottom:6cqw;display:grid;grid-template-columns:auto 1fr auto;gap:1cqw 2cqw;align-items:center;font-size:2cqw;color:#B9CFCC}
+.s-clinic .bars i{height:1.6cqw;border-radius:1cqw;background:#2A3A40;display:block;overflow:hidden}
+.s-clinic .bars i::after{content:"";display:block;height:100%;width:var(--w);background:#2DD4BF}
+.s-clinic .bars i.lo::after{background:#F4A259}
+.s-clinic .bars em{font:2.2cqw "Bebas Neue",sans-serif;font-style:normal;color:#E9F2F1}
+
+/* 10 綠色氈布卡牌 */
+.s-felt{background:radial-gradient(ellipse at 50% 40%,#237A4C,#124428 80%);color:#F6EFD8;font-family:"Noto Serif TC",serif}
+.s-felt .t{left:6cqw;right:6cqw;top:5cqw;font-weight:900;font-size:5.6cqw;text-align:center;line-height:1.15}
+.s-felt .st{left:10cqw;right:10cqw;top:17cqw;text-align:center;font-family:"Noto Sans TC",sans-serif;font-size:2.5cqw;color:#E9C46A}
+.s-felt .cards{left:0;right:0;bottom:4cqw;display:flex;justify-content:center;gap:2cqw}
+.s-felt .cd{width:13cqw;height:18cqw;background:#FFFDF6;border-radius:1.2cqw;box-shadow:0 .8cqw 1.4cqw rgba(0,0,0,.35);color:#1C1C1C;padding:1.2cqw;display:flex;flex-direction:column;justify-content:space-between;font-family:"Noto Sans TC",sans-serif}
+.s-felt .cd b{font:4.6cqw "Bebas Neue",sans-serif;line-height:1}
+.s-felt .cd small{font-size:1.8cqw;font-weight:700}
+
+/* 11 星圖時間軸 */
+.s-tl{background:radial-gradient(ellipse at 20% 0%,rgba(232,185,90,.16),transparent 55%),#121633;color:#F3EEDD;font-family:"Noto Sans TC",sans-serif}
+.s-tl .t{left:6cqw;right:6cqw;top:6cqw;font-weight:900;font-size:5.6cqw;line-height:1.15}
+.s-tl .st{left:6cqw;right:30cqw;top:19cqw;font-size:2.5cqw;color:#E8B95A}
+.s-tl .rows{left:6cqw;right:6cqw;bottom:6cqw;display:grid;grid-template-columns:7cqw 1fr;gap:1.2cqw 1.6cqw;align-items:center;font-size:2cqw;color:#C9C3AE}
+.s-tl .lane{height:3.4cqw;position:relative;background:repeating-linear-gradient(90deg,rgba(243,238,221,.28) 0 .2cqw,transparent .2cqw 1.43cqw)}
+.s-tl .ev{position:absolute;top:.3cqw;height:2.8cqw;border-radius:1.4cqw;background:#E8B95A;color:#121633;font-size:1.7cqw;font-weight:700;display:grid;place-items:center;white-space:nowrap}
+.s-tl .ev.b{background:#8EA2FF}.s-tl .ev.g{background:#7FD1AE}
+
+/* 12 課程錄製直播 */
+.s-rec{background:#1B1B1F;font-family:"Noto Sans TC",sans-serif}
+.s-rec .slide{left:3cqw;right:3cqw;top:3cqw;bottom:3cqw;background:#FFFFFF;border-radius:.8cqw;padding:5cqw 6cqw;color:#1E293B}
+.s-rec .t{font-weight:900;font-size:5.4cqw;line-height:1.2;max-width:62cqw}
+.s-rec .st{font-size:2.5cqw;color:#475569;margin-top:1.6cqw;max-width:56cqw}
+.s-rec .pts{margin-top:3cqw;display:flex;flex-direction:column;gap:1.2cqw;font-size:2.3cqw;color:#334155}
+.s-rec .pts span::before{content:"";display:inline-block;width:1.2cqw;height:1.2cqw;border-radius:50%;background:#2563EB;margin-right:1.2cqw;vertical-align:.2cqw}
+.s-rec .rec{right:6cqw;top:5.5cqw;font:600 1.8cqw "IBM Plex Mono",monospace;color:#DC2626;display:flex;align-items:center;gap:.8cqw}
+.s-rec .rec i{width:1.4cqw;height:1.4cqw;border-radius:50%;background:#DC2626;display:block;animation:blink 1.2s steps(2) infinite}
+.s-rec .av{right:6cqw;bottom:11cqw;width:13cqw;height:13cqw;border-radius:50%;background:radial-gradient(circle at 50% 38%,#F4D7B8 0 22%,transparent 23%),radial-gradient(ellipse at 50% 100%,#2563EB 0 45%,transparent 46%),#DBEAFE;border:.6cqw solid #fff;box-shadow:0 .6cqw 1.6cqw rgba(0,0,0,.3)}
+.s-rec .sub{left:16cqw;right:16cqw;bottom:5cqw;background:rgba(0,0,0,.72);color:#fff;font-size:2.3cqw;text-align:center;padding:.8cqw 1.6cqw;border-radius:.6cqw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@keyframes blink{50%{opacity:0}}
+
+@media (prefers-reduced-motion: reduce){.s-rec .rec i{animation:none}}
+@media (max-width:480px){body{padding-inline:16px}.meta{padding:12px 14px}summary{padding:11px 14px}.panel{padding:14px}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">NotebookLM × YAML 簡報設計框架</div>
+    <h1>簡報風格工坊</h1>
+    <p>12 種簡報風格，取材自馬克老師做過的教學工具視覺主題，範例題目都來自 AI 課程總覽裡的真實課程。先在「風格圖鑑」挑風格，再到「YAML 產生器」帶入課程大綱、逐頁調整，就能得到一份可貼進 NotebookLM 的 <code>global_design</code> ＋ <code>slides</code> 設計框架。縮圖是網頁繪製的風格示意，不是 NotebookLM 的實際輸出。</p>
+  </header>
+
+  <ol class="howto">
+    <li>挑一種風格，或在產生器帶入課程後逐頁修改，按「複製 YAML」。</li>
+    <li>在 NotebookLM 新增來源 →「複製的文字」貼上 YAML，標題取「簡報設計框架」。</li>
+    <li>產生簡報時同時勾選課程講義與這份 YAML，把產生器給的「自訂說明」貼進提示欄。</li>
+  </ol>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-gallery" aria-selected="true" aria-controls="gallery">風格圖鑑<small>12</small></button>
+    <button class="tab" role="tab" id="tab-builder" aria-selected="false" aria-controls="builder">YAML 產生器</button>
+  </div>
+
+  <section id="gallery" role="tabpanel" aria-labelledby="tab-gallery" style="display:flex;flex-direction:column;gap:20px">
+    <div class="filters" role="group" aria-label="依課程類型篩選">
+      <span>課程類型</span>
+      <button class="chip" data-f="all" aria-pressed="true">全部</button>
+      <button class="chip" data-f="提示詞" aria-pressed="false">提示詞工程</button>
+      <button class="chip" data-f="媒體" aria-pressed="false">AI 媒體製作</button>
+      <button class="chip" data-f="程式" aria-pressed="false">Vibe Coding</button>
+      <button class="chip" data-f="數據" aria-pressed="false">數據與表單</button>
+      <button class="chip" data-f="行銷" aria-pressed="false">行銷與策略</button>
+      <button class="chip" data-f="跨境" aria-pressed="false">跨境電商</button>
+      <button class="chip" data-f="補助" aria-pressed="false">政府補助</button>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="builder" role="tabpanel" aria-labelledby="tab-builder" hidden>
+    <div class="builder">
+      <div class="panel">
+        <h3>1. 選風格與課程</h3>
+        <div class="stylepick">
+          <div id="bPreview"></div>
+          <div class="fields" style="grid-template-columns:1fr">
+            <div class="f"><label for="bStyle">簡報風格</label><select id="bStyle"></select></div>
+            <div class="f"><label for="bCourse">從 AI 課程總覽帶入大綱</label><select id="bCourse"><option value="">（不帶入，自己填）</option></select></div>
+            <p class="hint" id="bSuggest"></p>
+          </div>
+        </div>
+        <h3>2. 簡報基本資料</h3>
+        <div class="fields">
+          <div class="f wide"><label for="bTitle">簡報標題</label><input id="bTitle"></div>
+          <div class="f"><label for="bSub">副標題</label><input id="bSub"></div>
+          <div class="f"><label for="bPresenter">講師署名</label><input id="bPresenter"></div>
+          <div class="f"><label for="bAudience">授課對象</label><input id="bAudience" placeholder="例：中小企業行政與行銷人員"></div>
+          <div class="f"><label for="bRatio">版面比例</label><select id="bRatio"><option>16:9</option><option>4:3</option><option>9:16</option></select></div>
+          <div class="f wide"><label for="bVoice">文案語氣（預設套用風格建議，可改）</label><input id="bVoice"></div>
+        </div>
+        <h3>3. 逐頁內容 <small>重點一行一點</small></h3>
+        <ol class="slides" id="bSlides"></ol>
+        <div class="btnrow">
+          <button class="btn ghost" type="button" id="bAdd">＋ 新增一頁</button>
+          <button class="btn ghost" type="button" id="bReset">清空重填</button>
+        </div>
+      </div>
+
+      <div class="panel out">
+        <h3>YAML 設計框架 <span class="btnrow"><button class="btn" type="button" id="bCopy">複製 YAML</button></span></h3>
+        <div class="stat" id="bStat"></div>
+        <pre id="bYaml" tabindex="0" aria-label="產生的 YAML"></pre>
+        <h3>NotebookLM 自訂說明 <button class="btn ghost" type="button" id="bCopyPrompt">複製說明</button></h3>
+        <p class="prompt" id="bPrompt"></p>
+        <p class="tip">YAML 只負責版面與視覺；實際講解內容會從你勾選的課程講義來源取用。頁數超過 15 頁時，NotebookLM 較容易漏頁，建議拆成兩份簡報分次產生。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>創作者：馬克老師　·　風格取材自工作區內的教學工具視覺主題　·　YAML 結構沿用〈YAML 簡報設計框架〉的 global_design ＋ slides 格式</footer>
+</div>
+
+<script>
+const COURSES = [{"id":"ai-intro","t":"AI 導論與數位生產力提升","cat":"AI 基礎素養","o":["人工智慧概述：圖靈測試與 AI 發展史（1950 / 1980 / 2000 / 2016）","AI / ML / DL / 生成式 AI 的關係與神經網路原理","AI 大數據對工作的影響與三大轉型趨勢（至 2030）","破壞式創新案例與每個行業的 AI 應用專家","成為 AI 人才四步驟與 AI 企劃 5W1H","NotebookLM 輸入產出全功能介紹（語音摘要、心智圖、簡報）","Whisper / WhisperDesktop 語音轉文字實作"]},{"id":"prompt-engineering","t":"提示詞工程設計技巧","cat":"提示詞工程","o":["常用模型簡介與特色比較表","如何撰寫有效的 Prompt：明確性、角色、限制詞","CRISPE Prompt Framework 結構解析","實戰範例：減重貼文、品牌故事、職涯貼文等多領域社群文案","ChatGPT 提問助手（Chrome 外掛）與設定功能","變數與參數：{{欄位}}、下拉選單 s、複選 c、單選 r","提示詞生提示詞（All in 1）自動產生 Prompt"]},{"id":"vibe-coding-intro","t":"Vibe Coding 專案設計（框架思考入門）","cat":"Vibe Coding","o":["一般 AI 與框架思考提示語比較","矩陣圖：2x2 象限刺激思考（外食、活動選擇）","基礎框架：垂直元素（因果）、平行元素（比較）、箭形圖（流程）","企業訓練重點與課程清單吻合度分析實作","Vibe Coding 概念（Andrej Karpathy）與特點","Vibe Coding 12 類弊病與風險（代碼品質、安全、技術債等）","Google AI Studio 實作：理財顧問、外食菜單、職涯辯論小工具"]},{"id":"online-forms","t":"線上表單製作與統計","cat":"數據與表單","o":["Google 表單三大情境：市場調查、訂單報名、測驗考試","測驗模式設定：自動批改、限制次數、防作弊（隨機題序、A/B 卷）","用 NotebookLM 產生測驗題目","Apps Script 一鍵建立 Google 表單","資料決策步驟：收集→處理→分析→視覺化（ETL/ELT）","Power Query 資料清理、轉換、整合","樞紐分析表與 DAX 量值（各縣市辦訓金額、門數、收入分析）"]},{"id":"business-model-copywriting","t":"商業模式與社群文案","cat":"行銷與文案","o":["系統性創意發想：A/B 觀點轉換看待問題","矩陣圖刺激創意（日常用品×附加價值）","運用 AI 發展商業模式（孫正義字典創意法、關鍵字結合與評分）","STP 行銷框架：市場區隔、目標選擇、定位","文案提示詞庫：找素材、蒐痛點、USP、開頭技巧、懸念標題","SCQA 痛點模型撰寫文案","臉書貼文審核與 AI 文案 15 項檢核表"]},{"id":"ai-media-slides","t":"AI 媒體與簡報設計","cat":"AI 媒體製作","o":["3 層題目生成法：主題→情境（誰+在哪+做什麼）→風格","進階公式：加上用途（IG/廣告/電商/課程封面）","Nano Banana 提示詞架構與 NotebookLM→Gem→Canvas 五步驟流程","AI 影片劇本生成三組工具（宣傳片、第一人稱、提示詞/反提示詞）","常用運鏡技巧：搖攝、急搖、垂直運鏡","Suno AI 背景音樂生成、Google Flow 圖片轉影片"]},{"id":"slides-shortvideo","t":"簡報與短影音工具運用","cat":"AI 媒體製作","o":["提示詞工程複習：CRISPE、變數與參數（s/c/r）","課程設計與簡報內容生成提示詞（6 小時內訓課程範例）","圖片提示詞資料庫與 Gem 視覺導演角色設定","Napkin AI 概念圖生成與下載","Suno 配樂、Google AI Studio 文字轉聲音","Canva 實作：去背、遮罩、動態封面、轉場、AI 生圖/生影片"]},{"id":"virtual-classroom","t":"虛擬教室與會議","cat":"數位教學工具","o":["訓練與評量管理：Google Classroom 五大功能","Microsoft Teams 線上會議：建立、分組討論室、畫面分享、錄製","Teams 故障排除：連線、音訊回音、畫面分享無聲","語音轉文字：WhisperDesktop、Buzz、Google AI Studio 生成 SRT","NotebookLM 會議內容管理與工作室功能","Canva 文字轉聲音與健康飲食短影片製作"]},{"id":"ai-media-quickstart","t":"AI 媒體製作快速上手","cat":"AI 媒體製作","o":["STAGE 1 CRISPE 提示詞框架：C/R/I/S/P/E 六維度拆解與實戰範例","STAGE 2 提示詞控制台：六模組即時組裝、標籤版／精簡版／範本版三種輸出","STAGE 3 AI 影音工坊：腳本→選片→配音→配樂→合成五階段影片製作精靈","STAGE 4 AI 繪圖提示詞工廠：一次設定、四種模型格式同步輸出","STAGE 5 影片先生：多軌時間軸、濾鏡轉場、關鍵影格動畫、雙模式匯出","STAGE 6 SocialPost：一次輸入、四平台文案齊發（僅 Facebook 可直接自動發布）"]},{"id":"ai-workplace-guide","t":"運用 AI 在職場的高效應用指南","cat":"職場應用","o":["【A】提示詞變數與參數（s/c/r）實作","【A】Google 表單測驗自動化與 Apps Script 一鍵建表","【A】WhisperDesktop 會議錄音轉逐字稿與 ChatGPT/Gemini 摘要","【B】AI 簡報內容結構化收斂與轉 Markdown（Claude Skill）","【B】數據儀表板八步驟：Excel→Google 試算表→NotebookLM→Gemini→Canvas","【B】加入時間軸滑桿、KPI 卡片、趨勢圖與自動更新機制"]},{"id":"digital-transformation","t":"AI 應用與職場數位轉型實務","cat":"職場應用","o":["人工智慧概述與 AI 發展史","提示工程 vs 背景工程（向量資料庫、RAG、Chunking）","中小企業兩大落差與 WEF 未來工作趨勢","成為 AI 人才四步驟與 AI 企劃 5W1H","Whisper 語音轉文字與會議摘要整理","CRISPE 提示詞設計與 Vibe Coding 矩陣框架思考"]},{"id":"vibe-coding-project","t":"Vibe Coding 的數位專案設計","cat":"Vibe Coding","o":["Vibe Coding 概念、特點、12 類風險與五階段設計流程","三種設計圖：架構圖（樹狀）、流程圖、混合圖，Mermaid 六步驟與語法（TD/LR、節點形狀）","工具分級表 L0–L3：Canva、Gemini、AI Studio、Cursor、Codex、Claude Code、Antigravity","案例：餐飲業可行性評估計算機（損益平衡、回本週期、樂觀／持平／悲觀情境模擬）","Claude Desktop 深度教學：三大分頁、9 個常用斜線指令、Projects、Artifacts、Connectors","AI 額度為什麼燒得快：對話重送四層內容、Token 輸出比輸入貴 5 倍、Prompt Caching 省 90%"]},{"id":"ai-literacy","t":"AI 素養及工具應用","cat":"AI 基礎素養","o":["AI 四大演進方向：分散式、生成式、可信任、永續 AI","人才重構：Vibe Coding、第二大腦、轉譯方法論","組織變革：AI-First 聘用邏輯（Shopify 案例）","Gemini in Chrome：影音筆記、跨分頁調研、語意化歷史、日曆/郵件整合","七種電子郵件場景提示詞（通用/婉拒/澄清/助理/追蹤/道歉/異議）","AI Prompt Genius 與 ChatGPT 提問助手提示詞模板管理"]},{"id":"ai-efficiency","t":"應用 AI 工具提升工作效率與專業知識技能","cat":"職場應用","o":["Gemini in Chrome：影音筆記、調研分析、知識管理、行政效率","七種商務郵件場景提示詞實戰","Prompt 設計原則、CRISPE 與變數參數（s/c/r）","AI Prompt Genius 提示詞模板管理","Nano Banana Pro 圖像提示詞庫與 Gem 視覺導演","旅遊行程／景點地圖：NotebookLM→Gem→Gemini→Google My Maps（CSV）"]},{"id":"ai-innovation-service","t":"AI 時代的創新服務","cat":"職涯與策略","o":["外部環境變遷與 WEF 未來工作報告","AI 與人共事五型態與分工型態（職務舉例）","iPAS 產業人才能力鑑定與 AI 相關證照","從執行者到轉譯者：成為技術與商業的雙語者","第一性原理與課程審查 AI 評分系統實案","曼陀羅思考法、3C 分析、品牌四構面、內容行銷六連招"]},{"id":"gen-ai-talent-plan","t":"從生成式 AI 應用到人才培訓計畫擬定","cat":"職場應用","o":["生成式 AI 定義與核心技術","產業環境轉變：成本、供應鏈、人力短缺、永續與資安","AI 不再是選擇而是必須（Coinbase、Google 案例）","人才培訓計畫架構：營運目標→能力缺口→課程需求","B2C 電商範例：客訴延遲 5 Why 拆解→課程建議","課程課題擬定與發展優先順序（效益×難易矩陣）"]},{"id":"prompt-engineering-pro","t":"提示詞工程設計技巧（連續型提示詞）","cat":"提示詞工程","o":["CRISPE 框架與多領域社群貼文範例","ChatGPT 提問助手變數/參數設定指令","提示詞類型：單次型 vs 連續型","提示詞生提示詞 All-in-1","提示詞生提示詞 Separate（先生成再轉變數型）"]},{"id":"ai-slide-cards","t":"運用 AI 進行生成簡報圖卡","cat":"AI 媒體製作","o":["資料蒐集外掛：Elmo Chat、DeepSRT、Temp Mail","內容摘要提示詞（臉書貼文）","AI 簡報生成流程：Felo 生內容→ChatGPT 轉大綱→Gamma 排版","課程設計提示詞與 AI 課程大綱生成器","SVG 知識圖卡（高階主管版）製作","Napkin AI 概念圖生成與下載"]},{"id":"ai-quiz-assessment","t":"運用 AI 進行測驗設計與訓後評量","cat":"數據與表單","o":["NotebookLM／RAG 介紹與工作室功能","訓後評量設計流程：產出→篩選→建表","LLM 產出 20 題四選一測驗題","Q01 提示詞：題目轉 Google Apps Script","Apps Script 授權與表單建立","測驗設定：自動評分、限制回應、隨機排序"]},{"id":"industry-efficiency","t":"打造高效產業經營與智慧生活","cat":"AI 基礎素養","o":["刻意練習：明確目標、計畫、即時回饋、突破舒適圈","房仲銷售流程數值化與中間目標設定（PDCA）","AI＋思考框架：一般 vs 框架思考提示語、矩陣圖","矩陣圖補充：償付／重要緊急／PPM／安索夫矩陣","AI 工具：Feedly、Google Alert、Elmo Chat、NotebookLM"]},{"id":"ai-work-efficiency","t":"AI 高效工作術","cat":"提示詞工程","o":["AIGC 定義與文字／圖像／影片生成工具","Shopify AI-First 聘用案例","提示詞結構與 CRISPE 框架","連續型提示詞（逐步推進）：課程設計範例","漏斗型提示詞（收斂聚焦）：創業發想範例"]},{"id":"ai-customer-service","t":"運用 AI 智能客服提升客戶滿意度與忠誠度","cat":"職場應用","o":["AI 共事與 No-Code／Low-Code 概念","WhisperDesktop 與 Whisper Web 語音轉文字","客服 email AI 與『資深客服專員』系統提示詞","Chatbase：上傳 File/Text/Website/Q&A/Notion 訓練代理","Playground 測試與本地佈署"]},{"id":"brand-growth","t":"數位工具助攻品牌曝光與銷售成長","cat":"行銷與文案","o":["目標客戶分群與 USP 超級賣點","3C 競爭者分析與五星評論優缺點萃取","人物誌（Persona）四步驟建立與設定表","消費模式：AIDMA、AISAS、AIDEES 與行銷策略 AIDAS","文案提示詞：品牌關鍵字、客戶痛點、STP 目標客群文案","Wordware 提示語工作流（變數→條件→產圖）"]},{"id":"ai-collaboration","t":"AI 賦能的高效協作力","cat":"團隊協作","o":["線上會議與虛擬教室協作（Teams 分組討論、Classroom 作業管理）","會議錄影轉逐字稿與 AI 摘要（WhisperDesktop／Google AI Studio）","共用表單協作：問卷、報名、測驗自動化（Google 表單＋Apps Script）","Gemini in Chrome 協作：郵件草擬、行事曆排程、跨分頁調研","七種商務郵件場景提示詞","NotebookLM 團隊知識庫與互動式數據儀表板（Gemini Canvas）"]},{"id":"prompt-library-management","t":"提示詞管理術","cat":"提示詞工程","o":["提示詞管理術架構：NotebookLM 提示詞庫（類 RAG）→ Google Gem 調度 → Gemini 產出","步驟一～二：建立提示詞資料庫並匯入自訂 Gem（AI 超級提示詞專家）","步驟三：Gem 系統提示詞設計（需求分析、多組提示詞呈現、品質控管與誠實原則）","步驟四～五：用 Gemini 進行內容協作、產出與精修最終成果","實例：AI 職場工作術短影音腳本導演工作流，一次產出 5 組標題與黃金開場口白"]},{"id":"cx-ipa-kano","t":"數據化顧客體驗管理實務","cat":"數據與表單","o":["顧客體驗（CX）vs 顧客滿意度（CSAT）概念釐清與三種分析工具總覽（柏拉圖／IPA／Kano）","Google 表單問卷設計：基本資料、重要度、表現度、Kano 成對題四大區塊","Excel IPA 分析實作：文字轉數值編碼（VLOOKUP）、計算平均、散佈圖與四象限判讀","Excel Kano 分析實作：5×5 評價對照表、INDEX/MATCH 自動分類、SII／DDI 滿意度指標","柏拉圖 80/20 分析：Excel 組合圖與累計百分比繪製","IPA × Kano 整合：交叉對照排出三級改善優先順序","改善行動計畫撰寫與帶回五份可重複使用模板"]},{"id":"vibe-coding-gas-ordering","t":"運用 GAS 打造線上訂餐系統","cat":"Vibe Coding","o":["線上點餐系統開發流程總覽（辨識→生成→建庫→部署五步驟）","步驟一：上傳菜單圖片，Gemini 辨識產生 JSON 資料結構","步驟二：提示詞＋JSON，Gemini 生成 Apps Script 程式碼","步驟三：在 Google Drive 建立試算表作為資料庫","步驟四：擴充功能→Apps Script 開啟編輯器","步驟五：貼上程式碼、儲存、部署為網頁應用程式並上線","前後端分離設計與介面美學（蘋果風格、紅白黑配色）"]},{"id":"ai-prompt-system-building","t":"系統化打造你的 AI 提示詞組模型","cat":"提示詞工程","o":["Chrome 內建 Gemini：影音摘要、跨分頁調研分析、語意化歷史紀錄搜尋","工作流整合：自動新增日曆與草擬 Gmail 邀請函","七種商務郵件提示詞情境（通用／婉拒／澄清／追蹤／道歉／異議）","CRISPE Prompt Framework：C/R/I/S/P/E 六維度與範例練習","ChatGPT 提問助手 Chrome 外掛與提示詞模板變數化（{{欄位}}、下拉／複選／單選參數）","提示詞控制台一句話生成六模組、文字整理編輯器排版校對後下載 Word"]},{"id":"ai-image-video-creative","t":"AI 圖像 × 影音創作實戰班","cat":"AI 媒體製作","o":["從需求到商品主張：核心價值雙軸、核心盤點三分類、洞察真實需求三層次","SCAMPER 七個角度創新思考法：一句主題展開七種創新視角、選出前三方案","AI 繪圖提示詞工廠：概念×風格＝四種模型可用提示詞、五秒動態影片腳本延伸","AI 提示詞產生器：VIDEO（影音腳本）／TAG／APE／CO-STAR 四套框架","AI 影音工坊：腳本→選片→配音→配樂→合成五階段精靈、一鍵全自動","影片先生：多軌時間軸、濾鏡轉場、關鍵影格動畫、雙模式匯出"]},{"id":"ai-tools-comprehensive-bootcamp","t":"AI工具全方位上手實戰班","cat":"AI 媒體製作","o":["Chrome 內建 Gemini：影音摘要、跨分頁調研、行事曆與郵件自動化","七種商務郵件提示詞情境（通用／婉拒／澄清／追蹤／道歉／異議）","CRISPE Prompt Framework 與提示詞控制台六模組即時組裝","ChatGPT 提問助手 Chrome 外掛與提示詞模板變數化","STAGE 4 AI 圖片製作：AI 繪圖提示詞工廠一次產出四種模型格式","STAGE 6 社群貼文製作：SocialPost 一次輸入四平台文案齊發"]},{"id":"excel-ai-advanced","t":"Excel 進階運用：VBA 自動化與 AI 儀表板","cat":"數據與表單","o":["AI + Excel 學習路徑：公式翻譯官、數據清洗員、圖表建議員三角色","實作練習：產品自動分類、客戶聯絡資訊拆分（LEFT/RIGHT/MID）","Excel VBA 技術指南：開發人員標籤、VBA 編輯器、模組撰寫、一鍵按鈕綁定巨集","VBA 常用圖表常數與除錯技巧（動態抓取範圍、先刪舊圖表、另存 .xlsm）","數據儀表板製作八步驟：Excel→Google 試算表→NotebookLM→Gemini→Canvas","建立自動更新機制：修改試算表資料、Dashboard 自動同步"]},{"id":"ai-office-automation","t":"AI Office 文書自動化應用","cat":"職場應用","o":["Chrome 內建 Gemini：影音摘要、跨分頁調研、Imagen 3 生成簡報配圖","語意化歷史紀錄搜尋、工作流整合（行事曆／Gmail 自動化）","七種商務郵件提示詞情境與 CRISPE Prompt Framework","Chrome 外掛比較：ChatGPT 提問助手 vs AI Prompt Genius（開源、變數化、Google Sheets 同步）","WhisperDesktop 安裝與語音轉文字：下載 ggml 語言模組、匯入影片產出 SRT","會議摘要整理提示詞：內容過濾、決策歸納、行動提取、MECE 邏輯校閱"]},{"id":"excel-ai-basics","t":"Excel 結合 AI 資料整理與運用","cat":"數據與表單","o":["資料型態：結構化（Excel/CSV）、半結構化（JSON/API）、非結構化（文字/圖片/影音）","XLOOKUP 基礎查詢：依商店／產品名稱回傳對應欄位","IF 條件判斷：業績評價、庫存採購預警標籤化","SUMIFS／COUNTIFS 多條件加總與特定產品筆數分析","UNIQUE + SUMIFS 動態報表：自動列出不重複清單並即時加總","Prompt vs Skill、Gem 提示詞設計五步驟：角色、任務、背景限制、格式、迭代優化"]}];
+
+/* 每個風格：配色（含註解）、字體、版型規則、7 種版面語彙 motifs，與縮圖 pv(t,st) */
+const STYLES = [
+{
+  id:"synth", name:"合成器控制台", en:"Synth Console", from:"提示詞控制台 Prompt",
+  mood:"深灰機箱、旋鈕與 LCD 螢幕，把提示詞的每個要素做成可以轉動調整的模組。",
+  fit:"提示詞工程、CRISPE／CO-STAR 框架、AI 工具操作", tags:["提示詞"],
+  atmosphere:"類比合成器控制台、旋鈕與推桿、精密調校、專業又好玩",
+  voice:"像調音一樣說明每個參數，例如「把 R 角色旋鈕轉到資深行銷顧問」",
+  colors:[["background","#1C1D21","機箱深灰"],["text","#F2F0EA",""],["title_color","#F2F0EA",""],["highlight_color","#FF7A1A","旋鈕指示橘"],["accent_palette",["#7CFFB2","#FF9A4D","#5C5E66"],"LCD 綠、暖橘、金屬灰"]],
+  typo:["粗黑體標題 + 等寬字體（參數與提示詞範例）","標題 Black，參數名稱全大寫等寬"],
+  rules:["旋鈕、推桿、LED 指示燈、接線孔等控制台元件","面板分隔線、模組外框、接線跳線連接各要素","髮絲金屬紋、LCD 螢幕微光"],
+  m:{cover:"深灰機箱面板，上方一排 6 個旋鈕標示框架字母，中央 LCD 螢幕顯示大標題，右側橘色 LED 亮起",
+     list:"每個單元做成一個控制台模組，模組上方有編號旋鈕",
+     card:"LCD 螢幕風格的資訊框，重點文字用螢光綠等寬字",
+     flow:"模組之間用彩色跳線串接，訊號由左流向右",
+     emph:"橘色 LED 與旋鈕指示線",
+     data:"推桿或 VU 表呈現數值高低，關鍵數字放大顯示在 LCD 上",
+     scene:"左側 LCD 顯示使用者原始提示詞，右側顯示調整後的輸出，中間一排旋鈕代表調整項目"},
+  sample:{t:"提示詞工程設計技巧",st:"CRISPE 六個旋鈕，一次調出好提示詞",type:"Concept",pt:"CRISPE 六維度",pp:["C 能力與角色","I 背景洞察","S 陳述任務","P 個性風格","E 多組實驗"]},
+  pv:(t,st)=>`<div class="pv s-synth"><div class="abs rail">${["C","R","I","S","P","E"].map((x,i)=>`<span class="knob"><i style="--r:${[-60,20,90,-20,45,130][i]}deg"></i>${x}</span>`).join("")}</div><div class="abs lcd"><div class="l">PROMPT&gt; _</div><div class="t">${t}</div><div class="st">${st}</div></div><div class="abs led"></div></div>`
+},
+{
+  id:"grid", name:"青色藍圖網格", en:"Cyan Blueprint", from:"AI 提示詞產生器",
+  mood:"深海軍藍底、青色雙層網格與編號方塊，像一張專案設計圖。",
+  fit:"Vibe Coding、系統架構、Apps Script 自動化流程", tags:["程式"],
+  atmosphere:"工程藍圖、精確對齊、結構化拆解、冷靜理性",
+  voice:"用「規格」「節點」「流程」等工程用語，句子短而明確",
+  colors:[["background","#0B1E2D","深海軍藍"],["text","#E6FBFF",""],["title_color","#E6FBFF",""],["highlight_color","#22D3EE","藍圖青"],["accent_palette",["#9BE7F5","#F2C94C","#1E3A4F"],"淺青、標註黃、網格暗線"]],
+  typo:["無襯線中文標題 + 等寬字體標註","標題 Black，標註小字大寫加字距"],
+  rules:["青色細線技術圖示：伺服器、試算表、齒輪、程式碼括號","實線方塊、編號節點、直角連接線","大小雙層方格網格，右下角圖框資訊欄"],
+  m:{cover:"深藍底雙層青色網格，左上等寬字圖號標籤，大標題下方一排青框方塊以箭頭串成流程",
+     list:"每個單元是一個帶編號的青框方塊，沿網格對齊排列",
+     card:"青色細框方塊，左上角等寬字編號",
+     flow:"青框方塊以直角箭頭串接，每格下方標英文代號",
+     emph:"標註黃的尺寸線與圈選",
+     data:"細線長條圖貼齊網格，關鍵數值用標註黃",
+     scene:"左側畫出使用者需求的草圖方塊，右側展開成系統架構圖，中間以虛線標示轉換"},
+  sample:{t:"Vibe Coding 的數位專案設計",st:"從需求到部署的五階段流程",type:"Steps",pt:"五階段設計流程",pp:["需求","設計圖","生成","測試","部署"]},
+  pv:(t,st)=>`<div class="pv s-grid"><div class="abs lab">DWG NO. VC-05 · REV A</div><div class="abs t">${t}</div><div class="abs st">${st}</div><div class="abs flow">${[["需求","SPEC"],["設計圖","DIAGRAM"],["生成","CODE"],["部署","DEPLOY"]].map((x,i)=>`${i?'<i>→</i>':''}<b>${x[0]}<small>${x[1]}</small></b>`).join("")}</div></div>`
+},
+{
+  id:"amber", name:"琥珀金跨境", en:"Amber Trade Route", from:"亞馬遜工具組／跨境物流大挑戰",
+  mood:"夜色深棕底、琥珀金航線與港口代號，跨境電商的貨物從這頭飛到那頭。",
+  fit:"跨境電商、物流、Amazon 上架與成本", tags:["跨境","行銷"],
+  atmosphere:"國際貿易、航線與倉儲、夜間機場的琥珀燈光、務實專業",
+  voice:"像營運主管簡報，數字先講、結論先講",
+  colors:[["background","#15120D","夜色深棕"],["text","#FFF7E8",""],["title_color","#FFF7E8",""],["highlight_color","#F5A524","琥珀金"],["accent_palette",["#F5C26B","#C9B48E","#3A3226"],"淺金、沙色、深棕"]],
+  typo:["粗黑體中文 + 窄體英文大寫（港口代號、數字）","標題 Black，數字用窄體特大"],
+  rules:["線條圖示：貨櫃、飛機、船、倉庫、包裹","虛線航線弧線、港口圓點、節點標籤","右上角琥珀色光暈，其餘平塗"],
+  m:{cover:"深棕底，左上琥珀色小標籤，大標題下方一條虛線航線從起點港口弧形飛到目的地倉庫",
+     list:"沿一條水平航線排列各單元，每站一個港口圓點",
+     card:"深色卡片加琥珀金細框，左上角窄體英文代號",
+     flow:"包裹沿虛線航線依序經過各節點，節點下方標中文說明",
+     emph:"琥珀金色塊與粗體數字",
+     data:"大號窄體數字搭配琥珀金長條，單位（US$、%、天）標在數字旁",
+     scene:"左邊是賣家倉庫，右邊是買家家門口，中間標出卡關的那一段並用琥珀色圈起來"},
+  sample:{t:"跨境物流大挑戰",st:"空運、海運、FBA 與 FBM 怎麼選",type:"Comparison",pt:"FBA vs FBM",pp:["FBA：入倉後由 Amazon 出貨與客服","FBM：賣家自行出貨，彈性高","比較重點：成本、時效、Prime 資格"]},
+  pv:(t,st)=>`<div class="pv s-amber"><div class="abs tag">CROSS-BORDER</div><div class="abs t">${t}</div><div class="abs st">${st}</div><svg class="abs" viewBox="0 0 880 120" fill="none"><path d="M20 110 Q440 -40 860 110" stroke="#F5A524" stroke-width="4" stroke-dasharray="14 12"/><circle cx="20" cy="110" r="9" fill="#F5A524"/><circle cx="440" cy="36" r="9" fill="#F5A524"/><circle cx="860" cy="110" r="9" fill="#F5A524"/></svg><div class="abs ports"><span>TPE<small>賣家出貨</small></span><span>LAX<small>進口清關</small></span><span>FBA<small>買家收貨</small></span></div></div>`
+},
+{
+  id:"forest", name:"森林小徑", en:"Forest Trail", from:"動物朋友的跨境電商大冒險",
+  mood:"淺綠草地、虛線小徑與關卡圓章，把一門課變成一張闖關學習地圖。",
+  fit:"學習地圖、課程導覽、新手入門、遊戲化學習", tags:["跨境","媒體"],
+  atmosphere:"森林探險、繪本感、溫暖友善、一關一關往前走",
+  voice:"由動物夥伴開口說話，用「下一站」「解鎖」引導進度",
+  colors:[["background","#EEF3E6","淺草綠"],["text","#2E3B24","深苔綠"],["title_color","#2E3B24",""],["highlight_color","#4F7A3A","森林綠"],["accent_palette",["#A0805A","#F2C14E","#C9D2BB"],"小徑棕、陽光黃、未解鎖灰綠"]],
+  typo:["圓體","標題 Bold，內文圓潤易讀"],
+  rules:["繪本風動物與植物：兔子、狐狸、小熊、樹葉、爪印","彎曲虛線小徑、對話泡泡、關卡圓章","紙張質感、角落淡淡草地暈染"],
+  m:{cover:"淺草綠底，一條棕色虛線小徑蜿蜒穿過畫面，沿途有編號關卡圓章，左上大標題下方一個動物對話泡泡",
+     list:"每個單元是小徑上的一個關卡圓章，已完成為綠色、未解鎖為灰綠",
+     card:"白底圓角卡片配深苔綠描邊，旁邊有動物頭像",
+     flow:"沿著虛線小徑一站一站前進，每站一個圓章與說明",
+     emph:"陽光黃星星貼紙",
+     data:"用果實或樹的高矮表示數量，旁邊標數字",
+     scene:"動物夥伴遇到一個關卡問題，用對話泡泡說出困擾，旁邊列出解法"},
+  sample:{t:"跨境電商探險地圖",st:"六關闖完，從選品走到上架",type:"Agenda",pt:"探險路線",pp:["流量排名偵察","物流大挑戰","商品標題","五點說明","成本試算","工作流整合"]},
+  pv:(t,st)=>`<div class="pv s-forest"><svg class="abs" viewBox="0 0 160 90" fill="none"><path d="M8 82 C40 82 46 60 70 62 S110 78 124 58 S140 30 152 26" stroke="#A0805A" stroke-width="1.6" stroke-dasharray="3 3"/><circle cx="20" cy="80" r="2.4" fill="#7AA05A"/><circle cx="148" cy="80" r="3.2" fill="#7AA05A"/><circle cx="140" cy="68" r="2.2" fill="#7AA05A"/></svg><div class="abs t">${t}</div><div class="abs bub">${st}</div><div class="abs lv" style="left:30cqw;bottom:5cqw">1</div><div class="abs lv" style="left:52cqw;bottom:10cqw">2</div><div class="abs lv off" style="left:72cqw;bottom:20cqw">3</div><div class="abs lv off" style="left:86cqw;top:9cqw">4</div></div>`
+},
+{
+  id:"star", name:"星空觀星桌", en:"Constellation", from:"CO-STAR 卡牌配對",
+  mood:"深夜星空裡，框架的每個字母是一顆星，連起來就是一個星座。",
+  fit:"AI 基礎素養、概念框架、理論模型", tags:["提示詞","數據"],
+  atmosphere:"觀星夜、星座連線、沉靜而有啟發性",
+  voice:"用「把點連成線」比喻觀念之間的關係",
+  colors:[["background","#070B1C","深夜藍"],["text","#EEF2FF",""],["title_color","#EEF2FF",""],["highlight_color","#F2C46D","星光金"],["accent_palette",["#8EA2FF","#24346E","#CFE0FF"],"星雲藍、銀河深藍、星點白"]],
+  typo:["明體粗字標題 + 黑體內文","標題 Heavy，字距略寬"],
+  rules:["細線星座圖、星點、望遠鏡、星盤刻度","金色細線連接概念節點成星座","星點散佈、底部銀河暈光"],
+  m:{cover:"深夜藍星空，大標題在上方，畫面中央用金色細線把幾個字母星點連成星座",
+     list:"每個單元是一顆標了名字的星，沿弧線排列",
+     card:"半透明深藍卡片加金色細邊，左上一顆小星",
+     flow:"星點之間以金線依序相連，像描出星座",
+     emph:"星光金色與星芒光暈",
+     data:"星的亮度與大小代表數值，旁邊標數字",
+     scene:"一個人在星空下看著散落的星點（零散資訊），旁邊展示連線後的完整星座（結構化知識）"},
+  sample:{t:"AI 導論與數位生產力提升",st:"把 AI、ML、DL 與生成式 AI 連成一張星圖",type:"Concept",pt:"AI 的四層關係",pp:["人工智慧 AI","機器學習 ML","深度學習 DL","生成式 AI"]},
+  pv:(t,st)=>`<div class="pv s-star"><svg class="abs" viewBox="0 0 160 90" fill="none" stroke="#F2C46D" stroke-width=".5"><path d="M70 72 L86 58 L104 64 L120 46 L138 52 L150 34"/>${[[70,72,"C"],[86,58,"O"],[104,64,"S"],[120,46,"T"],[138,52,"A"],[150,34,"R"]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="1.8" fill="#F2C46D"/><text x="${p[0]}" y="${p[1]+7}" fill="#EEF2FF" stroke="none" font-size="4.5" text-anchor="middle" font-family="IBM Plex Mono">${p[2]}</text>`).join("")}</svg><div class="abs t">${t}</div><div class="abs st">${st}</div></div>`
+},
+{
+  id:"wb", name:"白板會議室", en:"Whiteboard Room", from:"六頂思考帽分析產生器",
+  mood:"白板、彩色白板筆與六頂帽子，像一場正在進行的討論會。",
+  fit:"思考框架、職場應用、會議引導、團隊協作", tags:["行銷","數據"],
+  atmosphere:"會議室白板、手寫重點、合作討論、明亮清楚",
+  voice:"像引導師帶討論，常用提問句「如果換一頂帽子看呢？」",
+  colors:[["background","#FBFCFD","白板白"],["text","#1F2A44","白板筆藍黑"],["title_color","#1F2A44",""],["highlight_color","#2F6FDB","藍色白板筆"],["accent_palette",["#D64545","#F2C14E","#3E9B5F"],"紅、黃、綠白板筆"]],
+  typo:["手寫楷體標題 + 黑體內文","標題 Bold，下方手繪波浪底線"],
+  rules:["白板筆手繪圖示：帽子、便利貼、箭頭、圈選","手繪波浪底線、圈選、箭頭連線","白板反光、灰色鋁框與下方筆槽"],
+  m:{cover:"白板畫面加灰色鋁框，左上手寫大標題與藍色波浪底線，下方一排六頂不同顏色的帽子",
+     list:"用不同顏色白板筆逐條寫下，每條前面畫一個小色點",
+     card:"白板上的手繪框，框線顏色對應主題",
+     flow:"白板筆箭頭依序連接手繪方框",
+     emph:"紅色白板筆圈選",
+     data:"白板上手繪的簡單長條圖，數字用粗筆寫",
+     scene:"白板左邊寫下問題，右邊分欄寫各角色的觀點，用不同顏色區分"},
+  sample:{t:"六頂思考帽",st:"同一個問題，換六種角度看",type:"Comparison",pt:"六種視角",pp:["白帽：事實與數據","紅帽：直覺與感受","黑帽：風險與問題","黃帽：價值與機會","綠帽：創意與替代方案","藍帽：整理與結論"]},
+  pv:(t,st)=>`<div class="pv s-wb"><div class="abs frame"></div><div class="abs t">${t}</div><svg class="abs wave" viewBox="0 0 120 8" fill="none"><path d="M2 5 Q12 1 22 5 T42 5 T62 5 T82 5 T102 5 T118 5" stroke="#2F6FDB" stroke-width="2.2" stroke-linecap="round"/></svg><div class="abs st">${st}</div><div class="abs hats">${[["#FFFFFF","白"],["#D64545","紅"],["#1F2A44","黑"],["#F2C14E","黃"],["#3E9B5F","綠"],["#2F6FDB","藍"]].map(h=>`<span><i style="background:${h[0]}"></i>${h[1]}帽</span>`).join("")}</div></div>`
+},
+{
+  id:"map", name:"戰場地圖", en:"Strategy Map", from:"商業策略工作室",
+  mood:"橄欖綠地形等高線、座標格與插旗，商業策略像在沙盤上推演。",
+  fit:"商業模式、策略分析、競爭與定位", tags:["行銷"],
+  atmosphere:"沙盤推演、地形圖、指揮所、果斷有方向",
+  voice:"用「戰場」「據點」「推進」比喻市場選擇與執行",
+  colors:[["background","#3F4A2B","橄欖綠"],["text","#F1E8C6","沙色"],["title_color","#F1E8C6",""],["highlight_color","#C8553D","插旗紅"],["accent_palette",["#E6D9A8","#2B321D","#D9CC97"],"地圖紙黃、深綠、淺沙"]],
+  typo:["明體粗字標題 + 窄體英文標籤","標題 Heavy，標籤全大寫"],
+  rules:["地圖符號：旗子、據點、箭頭、指北針","等高線、座標刻度、推進箭頭","軍用地圖紙質感、等高線紋理"],
+  m:{cover:"橄欖綠地形圖底，邊緣有座標刻度，大標題下方地圖上插著三個標籤據點與一面紅旗",
+     list:"每個單元是地圖上的一個據點標籤，用推進箭頭連接",
+     card:"沙色紙條標籤卡，帶黑色粗框與投影",
+     flow:"粗推進箭頭從一個據點走到下一個據點",
+     emph:"紅色旗子與紅色圈選",
+     data:"地圖上的區域大小代表市場規模，標註數字",
+     scene:"沙盤上標出我方位置與對手位置，用箭頭畫出可能的進攻路線"},
+  sample:{t:"商業模式與社群文案",st:"Where 戰場、What 致勝模式、How 落地方式",type:"Steps",pt:"策略三問",pp:["Where：選哪個戰場","What：用什麼贏","How：怎麼落地"]},
+  pv:(t,st)=>`<div class="pv s-map"><div class="abs coord"><span>A1</span><span>B2</span><span>C3</span><span>D4</span><span>E5</span></div><div class="abs t">${t}</div><div class="abs st">${st}</div><div class="abs pin" style="left:40cqw;bottom:16cqw">WHERE<small>戰場</small></div><div class="abs pin" style="left:62cqw;bottom:24cqw">WHAT<small>致勝</small></div><div class="abs pin" style="left:80cqw;bottom:9cqw">HOW<small>落地</small></div><div class="abs pole" style="left:12cqw;bottom:5cqw"></div><div class="abs flag" style="left:12.4cqw;bottom:7.8cqw"></div></div>`
+},
+{
+  id:"doc", name:"公文稽核", en:"Official Document", from:"SBIR／iCAP／鳳凰貸款產生器",
+  mood:"白紙、紅色雙線、表格欄位與紅色印章，政府補助申請的正式感。",
+  fit:"政府補助申請、計畫書撰寫、法規與審查重點", tags:["補助"],
+  atmosphere:"官方文件、條理分明、嚴謹可信、一目了然的表格",
+  voice:"用條列與表格說清楚規定，避免口語誇飾",
+  colors:[["background","#FFFFFF","公文白"],["text","#1A1A1A",""],["title_color","#1A1A1A",""],["highlight_color","#B3202A","公文紅"],["accent_palette",["#F2EFE8","#6B6B6B","#B3202A"],"欄位底色、註記灰、印章紅"]],
+  typo:["明體粗字標題 + 黑體表格內文","標題 Heavy 置中，表格內文 Regular"],
+  rules:["簡潔線條圖示：文件、印章、勾選框、迴紋針","紅色粗細雙線、黑色細線表格","白紙無紋理，角落印章"],
+  m:{cover:"白紙，上方等寬字發文字號，置中明體大標題，下方紅色粗細雙線，再下方兩列欄位表格，右下角紅色方形印章",
+     list:"以「一、二、三」條列，每條後方附對應頁碼",
+     card:"左欄灰底欄位名稱、右欄說明的兩欄表格",
+     flow:"表格式時程，每列一個步驟與預定完成日",
+     emph:"公文紅底線與紅色註記",
+     data:"正式表格呈現金額與比例，合計列加粗",
+     scene:"左側列出申請書常見錯誤寫法，右側列出修正後寫法，用紅筆批註"},
+  sample:{t:"SBIR 計畫書撰寫重點",st:"第一階段　概念驗證",type:"Data",pt:"經費編列檢核",pp:["人事費：依投入月數計算","委託研究費：上限 40%","自籌款：不得低於補助款"]},
+  pv:(t,st)=>`<div class="pv s-doc"><div class="abs paper"><div class="no"><span>發文字號：課字第 115 號</span><span>速別：普通件</span></div><div class="t">${t}</div><div class="rule"></div><table><tr><td>主旨</td><td>${st}</td></tr><tr><td>說明</td><td>依官方格式逐段撰寫，表格欄位即時檢核。</td></tr></table></div><div class="abs seal">審查<br>通過</div></div>`
+},
+{
+  id:"clinic", name:"健診儀表", en:"Diagnostic Panel", from:"社群貼文健診站",
+  mood:"石墨藍底、青色儀表與分項長條，像一份把抽象指標量化的健檢報告。",
+  fit:"數據分析、顧客體驗 IPA／Kano、Excel 儀表板、評量回饋", tags:["數據"],
+  atmosphere:"診斷儀表、量化評分、冷靜客觀、讓數字說話",
+  voice:"先給總分再拆解分項，用「健康」「待加強」描述狀態",
+  colors:[["background","#172026","石墨藍"],["text","#E9F2F1",""],["title_color","#E9F2F1",""],["highlight_color","#2DD4BF","診斷青"],["accent_palette",["#F4A259","#8FB3AE","#2A3A40"],"警示橘、淡青灰、底槽"]],
+  typo:["黑體標題 + 窄體數字","標題 Black，分數用窄體特大"],
+  rules:["儀表、聽診器、勾選、警示三角等簡潔圖示","半圓儀表、分項進度條、狀態膠囊","深色平面，少量內陰影"],
+  m:{cover:"石墨藍底，左側大標題，右上半圓青色儀表顯示總分，下方三條分項長條，其中一條為警示橘",
+     list:"每個單元一列，右側一個小狀態膠囊（健康／待加強）",
+     card:"深色卡片內上方大數字、下方一句判讀",
+     flow:"量測 → 診斷 → 處方 三段式橫向流程，每段一個儀表圖示",
+     emph:"青色數字與警示橘膠囊",
+     data:"半圓儀表搭配分項長條圖，每項標數值",
+     scene:"左側一份原始資料或貼文，右側逐項打分並標出最需要改善的一項"},
+  sample:{t:"數據化顧客體驗管理實務",st:"柏拉圖、IPA 與 Kano 三種分析一次看",type:"Data",pt:"IPA 四象限判讀",pp:["繼續保持：重要且表現好","優先改善：重要但表現差","次要改善：不重要且表現差","過度投入：不重要但表現好"]},
+  pv:(t,st)=>`<div class="pv s-clinic"><div class="abs t">${t}</div><div class="abs st">${st}</div><div class="abs gauge"><b>82</b></div><div class="abs bars"><span>開頭吸引力</span><i style="--w:88%"></i><em>88</em><span>CTA 明確度</span><i class="lo" style="--w:46%"></i><em>46</em><span>情感共鳴</span><i style="--w:74%"></i><em>74</em></div></div>`
+},
+{
+  id:"felt", name:"綠色氈布卡牌", en:"Card Table", from:"CRISPE 卡牌配對遊戲",
+  mood:"牌桌綠氈布上攤開幾張卡牌，適合把觀念變成可以配對練習的題目。",
+  fit:"隨堂練習、分類配對、框架記憶、遊戲化評量", tags:["提示詞","媒體"],
+  atmosphere:"牌桌遊戲、翻牌揭曉、輕鬆競賽感",
+  voice:"用「出牌」「配對」「翻開答案」帶動練習",
+  colors:[["background","#1A5C38","牌桌綠氈布"],["text","#F6EFD8","象牙白"],["title_color","#F6EFD8",""],["highlight_color","#E9C46A","牌桌金邊"],["accent_palette",["#FFFDF6","#C0392B","#1C1C1C"],"卡面白、紅心、黑桃"]],
+  typo:["明體粗字標題 + 窄體英文字母（卡牌角標）","標題 Heavy 置中"],
+  rules:["撲克牌、籌碼、計時沙漏","卡牌圓角白框、斜放堆疊","氈布細絨紋理、中央聚光"],
+  m:{cover:"綠色氈布牌桌中央聚光，大標題置中，下方攤開幾張微斜的白色卡牌，每張左上角一個大字母",
+     list:"每個單元是一張攤開的卡牌，依序排成扇形",
+     card:"白色圓角卡牌，左上大字母、下方一行說明",
+     flow:"卡牌依序翻開排成一列，最後一張金邊",
+     emph:"金色卡牌外框與發光",
+     data:"籌碼堆疊高度代表數值",
+     scene:"桌上攤開幾張情境卡，請學員判斷每張該放進哪個類別格"},
+  sample:{t:"CRISPE 卡牌配對",st:"25 張卡，放進對的提示格",type:"Quiz",pt:"這張卡屬於哪一格？",pp:["題目：「請用輕鬆幽默的口吻」","A. C 能力與角色","B. P 個性風格（正解）","C. E 多組實驗"]},
+  pv:(t,st)=>`<div class="pv s-felt"><div class="abs t">${t}</div><div class="abs st">${st}</div><div class="abs cards">${[["CR","角色","-8deg","#C0392B"],["I","背景","-3deg","#1C1C1C"],["S","任務","2deg","#C0392B"],["P","風格","6deg","#1C1C1C"],["E","實驗","10deg","#C0392B"]].map(c=>`<div class="cd" style="transform:rotate(${c[2]});color:${c[3]}"><b>${c[0]}</b><small>${c[1]}</small></div>`).join("")}</div></div>`
+},
+{
+  id:"tl", name:"星圖時間軸", en:"Year Chart", from:"全年度行銷行事曆產生器",
+  mood:"深靛藍底上 52 週刻度與金色檔期膠囊，一整年的節奏一眼看完。",
+  fit:"行銷企劃、年度計畫、專案時程、課程進度", tags:["行銷"],
+  atmosphere:"星圖般的年度時間軸、節奏感、有計畫的從容",
+  voice:"用「檔期」「節點」「節奏」說明時間安排",
+  colors:[["background","#121633","深靛藍"],["text","#F3EEDD",""],["title_color","#F3EEDD",""],["highlight_color","#E8B95A","檔期金"],["accent_palette",["#8EA2FF","#7FD1AE","#2A2F5C"],"通路藍、人和綠、軌道暗線"]],
+  typo:["黑體標題 + 窄體數字（週次、日期）","標題 Black，週次用窄體"],
+  rules:["日曆、旗標、聲量喇叭、購物袋等線條圖示","細刻度時間軸、彩色膠囊檔期、泳道分列","左上角淡金光暈，其餘平塗"],
+  m:{cover:"深靛藍底，大標題下方三條泳道（天時、地利、人和），各泳道上有細刻度與金、藍、綠色檔期膠囊",
+     list:"單元沿時間軸由左到右排列，每個單元一顆膠囊",
+     card:"深靛藍卡片，上方一行窄體週次或日期",
+     flow:"時間軸上的節點依序點亮，下方寫對應行動",
+     emph:"檔期金膠囊",
+     data:"橫向甘特條，長度對應週數",
+     scene:"在時間軸上標出一個關鍵檔期，往前推算準備期、往後標出回顧期"},
+  sample:{t:"全年度行銷行事曆",st:"天時、地利、人和，交織成 52 週",type:"Steps",pt:"一檔活動的節奏",pp:["前 4 週：素材與通路準備","前 1 週：預熱與名單喚醒","檔期當週：主力推播","後 1 週：成效回顧"]},
+  pv:(t,st)=>`<div class="pv s-tl"><div class="abs t">${t}</div><div class="abs st">${st}</div><div class="abs rows"><span>天時</span><div class="lane"><span class="ev" style="left:4%;width:16%">春節</span><span class="ev" style="left:58%;width:14%">雙11</span></div><span>地利</span><div class="lane"><span class="ev b" style="left:22%;width:20%">官網＋電商</span></div><span>人和</span><div class="lane"><span class="ev g" style="left:40%;width:24%">CRM 會員日</span></div></div></div>`
+},
+{
+  id:"rec", name:"課程錄製直播", en:"Course Studio", from:"簡報課程錄製工坊",
+  mood:"乾淨白色投影片、角落虛擬主播與底部字幕，像一支正在錄製的線上課程。",
+  fit:"AI 媒體製作、線上課程、教學影片腳本", tags:["媒體"],
+  atmosphere:"線上課程錄影室、清楚易讀、講師親切陪伴",
+  voice:"講師第一人稱口語，像在鏡頭前說明，每頁一句可當字幕的重點",
+  colors:[["background","#FFFFFF","投影片白"],["text","#1E293B",""],["title_color","#1E293B",""],["highlight_color","#2563EB","重點藍"],["accent_palette",["#DC2626","#DBEAFE","#475569"],"錄影紅點、淺藍底、副標灰"]],
+  typo:["黑體","標題 Black，內文 Medium，字級偏大以便縮小觀看"],
+  rules:["簡潔線條圖示，數量少而大","每頁右下角預留圓形虛擬主播位置，底部預留一行字幕區","純白平面，無紋理"],
+  m:{cover:"白色投影片，左上大標題與副標，右下角圓形講師頭像徽章，右上紅色 REC 圓點，底部半透明黑色字幕條",
+     list:"大字條列，每條前一個藍色圓點，右下角保留講師頭像區",
+     card:"淺藍底圓角資訊框，避開右下角講師區",
+     flow:"由左到右三到五個圖示步驟，箭頭為重點藍",
+     emph:"重點藍粗體與淺藍底色塊",
+     data:"單一大圖表置左，右側一句結論，避開講師區",
+     scene:"左側一張情境示意圖，右側講師對話泡泡說出這頁的重點"},
+  sample:{t:"AI 媒體與簡報設計",st:"NotebookLM → Gem → Canvas 五步驟",type:"Steps",pt:"簡報生成五步驟",pp:["NotebookLM 整理講義","Gem 設定視覺導演角色","產生逐頁大綱","Canvas 排版","匯出與微調"]},
+  pv:(t,st)=>`<div class="pv s-rec"><div class="abs slide"><div class="t">${t}</div><div class="st">${st}</div><div class="pts"><span>整理講義重點</span><span>套用設計框架</span><span>一鍵產生簡報</span></div></div><div class="abs rec"><i></i>REC</div><div class="abs av"></div><div class="abs sub">今天我們用 YAML 把簡報風格固定下來</div></div>`
+}
+];
+
+const TYPES = [
+  ["Cover","封面"],["Agenda","課程大綱"],["Concept","概念說明"],["Steps","步驟流程"],
+  ["Comparison","比較對照"],["Data","數據重點"],["Case","案例情境"],["Quiz","隨堂練習"],["Summary","重點回顧"]
+];
+const TYPE_LABEL = Object.fromEntries(TYPES);
+
+/* 依頁面類型 × 風格語彙組出 visual_description */
+function visualFor(st, s, n){
+  const m = st.m, k = n || 0;
+  switch(s.type){
+    case "Cover": return m.cover;
+    case "Agenda": return `${m.list}，共 ${k} 個單元`;
+    case "Concept": return `左側標題與 2–3 句重點，右側一張概念示意圖；資訊區使用${m.card}`;
+    case "Steps": return `${m.flow}，共 ${k} 個步驟`;
+    case "Comparison": return `左右（或多欄）並排對照，每欄使用${m.card}，差異處用${m.emph}標示`;
+    case "Data": return `${m.data}；最重要的一個數字或結論用${m.emph}`;
+    case "Case": return m.scene;
+    case "Quiz": return `題目置中放大，選項以${m.card}排列，揭曉時正解用${m.emph}標示`;
+    case "Summary": return `${m.list}，列出本堂課帶走的重點，最下方放講師署名`;
+  }
+  return m.card;
+}
+
+/* ===== YAML 組裝 ===== */
+const q = s => '"' + String(s ?? "").replace(/\\/g,"\\\\").replace(/"/g,'\\"').replace(/\r?\n/g," ") + '"';
+const qa = a => "[" + a.map(q).join(", ") + "]";
+function buildYaml(d){
+  const st = STYLES.find(x=>x.id===d.style) || STYLES[0];
+  const L = [];
+  L.push(`# 【${st.name}】簡報設計框架${d.title?`：${d.title}`:""}`);
+  L.push(`# 風格來源：${st.from}｜由「簡報風格工坊」產生`);
+  L.push("global_design:");
+  L.push(`  atmosphere: ${q(st.atmosphere)}`);
+  L.push(`  voice: ${q(d.voice || st.voice)}`);
+  if(d.audience) L.push(`  audience: ${q(d.audience)}`);
+  L.push(`  aspect_ratio: ${q(d.ratio || "16:9")}`);
+  L.push("  color_scheme:");
+  st.colors.forEach(([k,v,c])=>{
+    const val = Array.isArray(v) ? qa(v) : q(v);
+    L.push(`    ${k}: ${val}${c?`  # ${c}`:""}`);
+  });
+  L.push("  typography:");
+  L.push(`    family: ${q(st.typo[0])}`);
+  L.push(`    style: ${q(st.typo[1])}`);
+  L.push("  layout_rules:");
+  L.push(`    icon_style: ${q(st.rules[0])}`);
+  L.push(`    line_art: ${q(st.rules[1])}`);
+  L.push(`    texture: ${q(st.rules[2])}`);
+  L.push("");
+  L.push("slides:");
+  d.slides.forEach((s,i)=>{
+    const pts = (s.points||"").split("\n").map(x=>x.trim()).filter(Boolean);
+    L.push(`  p${i+1}:`);
+    L.push(`    type: ${q(s.type)}  # ${TYPE_LABEL[s.type]||""}`);
+    L.push(`    visual_description: ${q(visualFor(st,s,pts.length))}`);
+    L.push("    content:");
+    L.push(`      title: ${q(s.title || (i===0?d.title:""))}`);
+    if(s.type==="Cover"){
+      if(d.subtitle) L.push(`      subtitle: ${q(d.subtitle)}`);
+      if(d.presenter) L.push(`      presenter: ${q(d.presenter)}`);
+      if(pts.length) L.push(`      tagline: ${q(pts[0])}`);
+    } else if(pts.length){
+      const key = {Agenda:"items",Steps:"steps",Quiz:"options",Comparison:"columns"}[s.type] || "points";
+      L.push(`      ${key}:`);
+      pts.forEach(p=>L.push(`        - ${q(p)}`));
+    }
+    if(s.type==="Summary" && d.presenter) L.push(`      signature: ${q(d.presenter)}`);
+  });
+  return L.join("\n");
+}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function highlightYaml(src){
+  return src.split("\n").map(line=>{
+    if(/^\s*#/.test(line)) return `<span class="c">${esc(line)}</span>`;
+    const ci=line.lastIndexOf("  # ");
+    const code=ci>0?line.slice(0,ci):line, cm=ci>0?line.slice(ci):"";
+    const e=esc(code).replace(/"((?:\\.|[^"\\])*)"/g,'<span class="s">"$1"</span>').replace(/^(\s*)([A-Za-z_0-9]+)(:)/,'$1<span class="k">$2</span>$3');
+    return e+(cm?`<span class="c">${esc(cm)}</span>`:"");
+  }).join("\n");
+}
+function copyText(text, btn, label, preEl){
+  const done=()=>{btn.textContent="已複製";setTimeout(()=>btn.textContent=label,1600)};
+  const fallback=()=>{if(preEl){const r=document.createRange();r.selectNodeContents(preEl);const s=getSelection();s.removeAllRanges();s.addRange(r)}btn.textContent="已選取，按 Ctrl+C";setTimeout(()=>btn.textContent=label,2400)};
+  try{navigator.clipboard.writeText(text).then(done,fallback)}catch(err){fallback()}
+}
+
+/* ===== 圖鑑 ===== */
+function sampleDeck(st){
+  return {style:st.id,title:st.sample.t,subtitle:st.sample.st,presenter:"馬克老師",voice:"",ratio:"16:9",
+    slides:[{type:"Cover",title:st.sample.t,points:""},{type:st.sample.type,title:st.sample.pt,points:st.sample.pp.join("\n")}]};
+}
+const grid=document.getElementById("grid");
+grid.innerHTML=STYLES.map((st,i)=>{
+  const y=buildYaml(sampleDeck(st));
+  return `<article class="card" data-tags="${st.tags.join(" ")}">
+  <div class="pvbox">${st.pv(st.sample.t,st.sample.st)}</div>
+  <div class="meta">
+    <h2>${st.name} <small>${st.en}</small></h2>
+    <p class="mood">${st.mood}</p>
+    <dl>
+      <dt>適合</dt><dd>${st.fit}</dd>
+      <dt>取材</dt><dd class="from">${st.from}</dd>
+      <dt>色票</dt><dd class="swatches">${st.colors.flatMap(c=>Array.isArray(c[1])?c[1]:[c[1]]).filter((v,j,a)=>a.indexOf(v)===j).map(c=>`<i style="background:${c}" title="${c}"></i>`).join("")}</dd>
+    </dl>
+  </div>
+  <div class="cardbar">
+    <details><summary>YAML 範例（2 頁）</summary>
+      <div class="code"><button class="copy" type="button" data-i="${i}">複製</button><pre id="y${i}">${highlightYaml(y)}</pre></div>
+    </details>
+    <button class="use" type="button" data-use="${st.id}">用這個風格做簡報 →</button>
+  </div>
+</article>`}).join("");
+grid.addEventListener("click",e=>{
+  const b=e.target.closest(".copy");
+  if(b){copyText(buildYaml(sampleDeck(STYLES[+b.dataset.i])),b,"複製",document.getElementById("y"+b.dataset.i));return}
+  const u=e.target.closest(".use");
+  if(u){state.style=u.dataset.use;state.voice="";syncForm();render();showTab("builder");window.scrollTo({top:document.querySelector(".tabs").offsetTop-8,behavior:"smooth"})}
+});
+document.querySelector(".filters").addEventListener("click",e=>{
+  const c=e.target.closest(".chip"); if(!c) return;
+  document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===c?"true":"false"));
+  const f=c.dataset.f;
+  document.querySelectorAll(".card").forEach(card=>{card.hidden=!(f==="all"||card.dataset.tags.split(" ").includes(f))});
+});
+
+/* ===== 分頁 ===== */
+function showTab(id){
+  ["gallery","builder"].forEach(x=>{
+    document.getElementById(x).hidden = x!==id;
+    document.getElementById("tab-"+x).setAttribute("aria-selected", x===id?"true":"false");
+  });
+  document.getElementById("gallery").style.display = id==="gallery"?"flex":"";
+  try{localStorage.setItem("ssy.tab",id)}catch(e){}
+}
+document.querySelector(".tabs").addEventListener("click",e=>{const t=e.target.closest(".tab");if(t)showTab(t.getAttribute("aria-controls"))});
+
+/* ===== 產生器 ===== */
+const CAT_STYLE = {"提示詞工程":"synth","AI 媒體製作":"rec","Vibe Coding":"grid","數據與表單":"clinic","行銷與文案":"map","職場應用":"wb","AI 基礎素養":"star","職涯與策略":"map","數位教學工具":"forest","團隊協作":"wb"};
+function splitOutline(item){
+  const m=item.match(/^(.+?)[：:](.+)$/);
+  const title=(m?m[1]:item).trim();
+  const pts=m?m[2].split(/[、，,；;／]/).map(x=>x.trim()).filter(Boolean).slice(0,6):[];
+  let type="Concept";
+  if(/流程|步驟|STAGE|→|階段/.test(item)) type="Steps";
+  else if(/ vs |vs\.|比較|對照/i.test(item)) type="Comparison";
+  else if(/數據|統計|分析|指標|%|SUMIFS|COUNTIFS/.test(item)) type="Data";
+  else if(/案例|實戰|範例|實作/.test(item)) type="Case";
+  return {type,title,points:pts.join("\n")};
+}
+function deckFromCourse(c){
+  const body=c.o.map(splitOutline);
+  return {
+    title:c.t, subtitle:c.cat,
+    slides:[
+      {type:"Cover",title:c.t,points:""},
+      {type:"Agenda",title:"今天的課程地圖",points:body.map(b=>b.title).join("\n")},
+      ...body,
+      {type:"Summary",title:"重點回顧",points:body.slice(0,3).map(b=>b.title).join("\n")}
+    ]
+  };
+}
+const DEFAULT_COURSE="ai-media-slides";
+function freshState(){
+  const c=COURSES.find(x=>x.id===DEFAULT_COURSE)||COURSES[0];
+  const base={style:"rec",course:c?c.id:"",presenter:"馬克老師",audience:"",voice:"",ratio:"16:9",title:"",subtitle:"",slides:[{type:"Cover",title:"",points:""}]};
+  return c?Object.assign(base,deckFromCourse(c)):base;
+}
+let state=freshState();
+try{const s=JSON.parse(localStorage.getItem("ssy.draft")||"null");if(s&&Array.isArray(s.slides))state=Object.assign(state,s)}catch(e){}
+
+const $=id=>document.getElementById(id);
+$("bStyle").innerHTML=STYLES.map(s=>`<option value="${s.id}">${s.name}（${s.en}）</option>`).join("");
+$("bCourse").innerHTML+=COURSES.map(c=>`<option value="${c.id}">${esc(c.t)}</option>`).join("");
+
+function syncForm(){
+  $("bStyle").value=state.style; $("bCourse").value=state.course||"";
+  $("bTitle").value=state.title; $("bSub").value=state.subtitle; $("bPresenter").value=state.presenter;
+  $("bAudience").value=state.audience; $("bRatio").value=state.ratio;
+  const st=STYLES.find(x=>x.id===state.style);
+  $("bVoice").value=state.voice; $("bVoice").placeholder=st.voice;
+  renderSlides();
+}
+function renderSlides(){
+  $("bSlides").innerHTML=state.slides.map((s,i)=>`<li class="srow" data-i="${i}">
+    <select id="st${i}" data-k="type" aria-label="第 ${i+1} 頁類型">${TYPES.map(t=>`<option value="${t[0]}"${t[0]===s.type?" selected":""}>${t[1]}</option>`).join("")}</select>
+    <input id="sh${i}" data-k="title" value="${esc(s.title).replace(/"/g,"&quot;")}" placeholder="${s.type==="Cover"?"留白則用簡報標題":"本頁標題"}" aria-label="第 ${i+1} 頁標題">
+    <span class="ops"><button class="ib" type="button" data-op="up" title="上移" aria-label="上移">↑</button><button class="ib" type="button" data-op="down" title="下移" aria-label="下移">↓</button><button class="ib" type="button" data-op="del" title="刪除此頁" aria-label="刪除此頁">✕</button></span>
+    <textarea id="sp${i}" rows="${Math.max(2,Math.min(8,(s.points||"").split("\n").length+1))}" data-k="points" placeholder="${s.type==="Cover"?"選填：一句標語":"重點，一行一點"}" aria-label="第 ${i+1} 頁重點">${esc(s.points)}</textarea>
+  </li>`).join("");
+}
+function render(){
+  const st=STYLES.find(x=>x.id===state.style)||STYLES[0];
+  $("bPreview").innerHTML=st.pv(esc(state.title||st.sample.t),esc(state.subtitle||st.sample.st));
+  const c=COURSES.find(x=>x.id===state.course);
+  const sug=c&&CAT_STYLE[c.cat];
+  $("bSuggest").innerHTML = sug && sug!==state.style ? `這門課屬於「${esc(c.cat)}」，也可以試試 <button class="chip" type="button" id="bSug" data-s="${sug}">${STYLES.find(x=>x.id===sug).name}</button>` : (c?`「${esc(c.cat)}」類課程，風格已對應。`:"可直接自己填寫各頁內容。");
+  const y=buildYaml(state);
+  $("bYaml").innerHTML=highlightYaml(y);
+  const n=state.slides.length;
+  $("bStat").innerHTML=`<span>風格 <b>${st.name}</b></span><span>頁數 <b>${n}</b></span><span>YAML <b>${y.split("\n").length}</b> 行</span>`;
+  $("bPrompt").textContent=`請以來源「${state.title||"本課程"}｜${st.name}簡報設計框架」為版面與視覺依據：套用 global_design 的配色、字體、圖示與紋理規則，並依 slides 的頁序（p1–p${n}）與每頁 visual_description 製作 ${n} 頁簡報。內容細節以課程講義來源為準，可補充講解，但不要新增或刪除 YAML 未列出的頁面。`;
+  try{localStorage.setItem("ssy.draft",JSON.stringify(state))}catch(e){}
+}
+
+$("bStyle").addEventListener("change",e=>{state.style=e.target.value;state.voice="";$("bVoice").value="";$("bVoice").placeholder=STYLES.find(x=>x.id===state.style).voice;render()});
+$("bCourse").addEventListener("change",e=>{
+  state.course=e.target.value;
+  const c=COURSES.find(x=>x.id===state.course);
+  if(c){Object.assign(state,deckFromCourse(c)); if(CAT_STYLE[c.cat]) state.style=CAT_STYLE[c.cat]; state.voice=""}
+  syncForm(); render();
+});
+[["bTitle","title"],["bSub","subtitle"],["bPresenter","presenter"],["bAudience","audience"],["bVoice","voice"],["bRatio","ratio"]].forEach(([id,k])=>{
+  $(id).addEventListener("input",e=>{state[k]=e.target.value;render()});
+});
+$("bSlides").addEventListener("input",e=>{
+  const row=e.target.closest(".srow"); const k=e.target.dataset.k; if(!row||!k) return;
+  state.slides[+row.dataset.i][k]=e.target.value;
+  if(k==="type") renderSlides();
+  render();
+});
+$("bSlides").addEventListener("click",e=>{
+  const b=e.target.closest(".ib"); if(!b) return;
+  const i=+b.closest(".srow").dataset.i, S=state.slides;
+  if(b.dataset.op==="up"&&i>0)[S[i-1],S[i]]=[S[i],S[i-1]];
+  if(b.dataset.op==="down"&&i<S.length-1)[S[i+1],S[i]]=[S[i],S[i+1]];
+  if(b.dataset.op==="del"&&S.length>1)S.splice(i,1);
+  renderSlides(); render();
+});
+$("bAdd").addEventListener("click",()=>{state.slides.push({type:"Concept",title:"",points:""});renderSlides();render();$("sh"+(state.slides.length-1)).focus()});
+$("bReset").addEventListener("click",()=>{Object.assign(state,{course:"",title:"",subtitle:"",audience:"",voice:"",slides:[{type:"Cover",title:"",points:""},{type:"Concept",title:"",points:""}]});syncForm();render();$("bTitle").focus()});
+$("bSuggest").addEventListener("click",e=>{const b=e.target.closest("#bSug");if(b){state.style=b.dataset.s;state.voice="";syncForm();render()}});
+$("bCopy").addEventListener("click",e=>copyText(buildYaml(state),e.currentTarget,"複製 YAML",$("bYaml")));
+$("bCopyPrompt").addEventListener("click",e=>copyText($("bPrompt").textContent,e.currentTarget,"複製說明",$("bPrompt")));
+
+syncForm(); render();
+let startTab="gallery";
+if(location.hash==="#builder") startTab="builder";
+else{try{startTab=localStorage.getItem("ssy.tab")||"gallery"}catch(e){}}
+showTab(startTab==="builder"?"builder":"gallery");
+</script>
