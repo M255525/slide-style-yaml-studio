@@ -1,3 +1,4 @@
+<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>簡報風格工坊</title>
@@ -834,17 +835,31 @@ $("mailCopy").addEventListener("click",e=>copyText("tsaimark@gmail.com",e.curren
 </script>
 
 <script>
-/* ================= 頂部跑馬燈（獨立運作；共用工作區既有的公告 Google Sheet） ================= */
+/* ================= 頂部跑馬燈（獨立運作） =================
+   資料來源：Google 試算表「跑馬燈」的「工作表1」A 欄（A1 標題「內容」略過）
+   https://docs.google.com/spreadsheets/d/1sSBXW2dAc-4u0j21Q72MzNEBIhDccShhr1iJcAdG0UE
+   讀取順序：
+   1. 本機快取（上次成功讀到的內容）→ 沒有則用下方快照 DEFAULT_ITEMS
+   2. 一般網頁／本機：工作區共用公告 Apps Script 端點（讀同一張試算表）
+   3. Claude Artifact 檢視器內（外部連線被擋）：用檢視者的 Google Drive 連接器直接讀試算表 */
 (function () {
   "use strict";
+  var SHEET_ID = "1sSBXW2dAc-4u0j21Q72MzNEBIhDccShhr1iJcAdG0UE";
+  var SHEET_TAB = "工作表1";
+  var DRIVE_SERVER = "Google Drive";
   var MARQUEE_CHECK_URL = "https://script.google.com/macros/s/AKfycbwKX0DNNbY8y4nf90BFTHtxgfqJcHHcZasRrgycl4QAe52_hkjMWSkYk4xOsqU-JPCROw/exec";
   var STORAGE_KEY = "slideStyleYamlStudioMarquee";
   var REFRESH_MS = 20 * 60 * 1000;
-  /* 公告端點連不上時（例如在 Claude Artifact 檢視器裡，外部連線會被擋）顯示的預設內容 */
+  /* 試算表「工作表1」2026-10-01 的內容快照，兩條讀取路徑都失敗時使用 */
   var DEFAULT_ITEMS = [
-    "簡報風格工坊：12 種風格 × AI 課程大綱，一鍵產生 NotebookLM 用的 YAML 設計框架",
-    "使用方式：複製 YAML → 在 NotebookLM 貼成文字來源 → 產生簡報時同時勾選講義與 YAML",
-    "更多 AI 教學工具與課程資訊，請洽馬克老師 tsaimark@gmail.com"
+    "📢 📢📢歡迎使用此課程教學版",
+    "🗓 創作者近日開設一門產業投資方案課程，課程名稱：AI 應用與職場數位轉型實務班第02期",
+    "💬 產投課程代碼 : 173455",
+    "🕛 115/10/24 ~ 115/11/21 每週六09:00~12:00；13:00~16:00",
+    "🏨 新北市板橋區文化路２段242號6樓",
+    "🏦 訓練單位：新北市線上數位學習協進會",
+    "🙎‍♂️ 聯絡人：陳穗華小姐   ☎️ 電話：02-22735757",
+    "🔗  https://reurl.cc/Leaxv9"
   ];
   var bar = document.getElementById("marqueeBar");
   var track = document.getElementById("marqueeTrack");
@@ -857,12 +872,13 @@ $("mailCopy").addEventListener("click",e=>copyText("tsaimark@gmail.com",e.curren
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) {}
   }
   function appendParsedText(container, text) {
-    var re = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    /* 支援 [文字](網址) 與單獨貼上的網址 */
+    var re = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s)]+)/g;
     var lastIndex = 0, m;
     while ((m = re.exec(text))) {
       if (m.index > lastIndex) container.appendChild(document.createTextNode(text.slice(lastIndex, m.index)));
       var a = document.createElement("a");
-      a.href = m[2]; a.textContent = m[1]; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.href = m[2] || m[3]; a.textContent = m[1] || m[3]; a.target = "_blank"; a.rel = "noopener noreferrer";
       a.style.color = "inherit"; a.style.textDecoration = "underline";
       container.appendChild(a);
       lastIndex = re.lastIndex;
@@ -899,18 +915,53 @@ $("mailCopy").addEventListener("click",e=>copyText("tsaimark@gmail.com",e.curren
       fetch(MARQUEE_CHECK_URL, { method: "POST", body: JSON.stringify({ serial: "" }) })
         .then(function (r) { return r.json(); })
         .then(function (data) {
-          if (data && Array.isArray(data.marquee) && data.marquee.length) {
-            saveCache(data.marquee);
-            render(data.marquee);
-          }
+          if (data && Array.isArray(data.marquee)) applyItems(data.marquee);
         })
         .catch(function () {});
     } catch (e) {}
   }
 
+  /* Drive 連接器回傳的是試算表的文字表格，取出指定工作表 A 欄的每一列 */
+  function parseSheetText(text) {
+    if (typeof text !== "string") return [];
+    var start = text.indexOf("Sheet Name: " + SHEET_TAB);
+    if (start < 0) return [];
+    var section = text.slice(start);
+    var stop = section.search(/###\s*(Table Columns|Sheet Name)/);
+    if (stop > 0) section = section.slice(0, stop);
+    var items = [];
+    section.split("\n").forEach(function (line) {
+      if (line.trim().charAt(0) !== "|") return;
+      var cell = (line.split("|")[1] || "").trim().replace(/\\([~*_|\\`\[\]])/g, "$1");
+      if (!cell || /^:?-{2,}:?$/.test(cell) || cell === "內容") return;
+      items.push(cell);
+    });
+    return items;
+  }
+  function applyItems(items) {
+    if (items && items.length) { saveCache(items); render(items); }
+  }
+  function watchDrive(mcp) {
+    mcp.watchTool(DRIVE_SERVER, "read_file_content", { fileId: SHEET_ID }, function (ev) {
+      if (ev.type !== "data") return; /* 任何錯誤（未連接 Drive、未同意、暫時連不上）都保留目前顯示的公告 */
+      var p = ev.result && ev.result.payload;
+      var text = p && typeof p === "object" ? p.fileContent : p;
+      applyItems(parseSheetText(text));
+    }, { refetchInterval: REFRESH_MS });
+  }
+
   var cached = loadCache();
   render(cached.length ? cached : DEFAULT_ITEMS);
-  fetchMarquee();
-  setInterval(fetchMarquee, REFRESH_MS);
+
+  var claudeApi = window.claude;
+  if (claudeApi && typeof claudeApi.use === "function") {
+    /* 在 Claude Artifact 檢視器內：外部連線會被擋，改走 Google Drive 連接器 */
+    claudeApi.use("mcp").then(function (mcp) {
+      if (mcp) watchDrive(mcp);
+    }).catch(function () {});
+  } else {
+    fetchMarquee();
+    setInterval(fetchMarquee, REFRESH_MS);
+  }
 })();
 </script>

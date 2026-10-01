@@ -23,11 +23,16 @@
 
 ## 週邊功能（2026-10-01 補上）
 
-- **頂部跑馬燈**：獨立 IIFE，逐字沿用 `ecommerce-health-dashboard` 的實作（深色細長版型 `#111827`／`#fbbf24`、共用工作區公告 Apps Script 端點 `MARQUEE_CHECK_URL`），localStorage key `slideStyleYamlStudioMarquee`。**多了 `DEFAULT_ITEMS` 預設公告**：Claude Artifact 檢視器的 CSP 會擋掉對 script.google.com 的 fetch，沒有快取時就顯示預設三則；本機或一般網站上會抓到共用公告取代。
+- **頂部跑馬燈**：資料來源為 Google 試算表「跑馬燈」（`1sSBXW2dAc-4u0j21Q72MzNEBIhDccShhr1iJcAdG0UE`）的「工作表1」A 欄（A1「內容」略過），跟工作區共用公告是同一張表。讀取順序：localStorage 快取（`slideStyleYamlStudioMarquee`）→ `DEFAULT_ITEMS`（2026-10-01 的工作表1快照）→ 依環境二選一：
+  - **一般網頁（GitHub Pages／本機）**：沒有 `window.claude`，打共用公告 Apps Script 端點 `MARQUEE_CHECK_URL`。
+  - **Claude Artifact 檢視器**：CSP 擋外部連線，改用宣告的 `mcp` capability（`Google Drive` 連接器的 `read_file_content`，`watchTool` 每 20 分鐘刷新），用 `parseSheetText()` 從回傳的 markdown 表格取出工作表1 A 欄並還原 `\~` 跳脫。檢視者沒連 Drive 或不同意時，保留快取／快照，不顯示錯誤。宣告 mcp 後此 Artifact 不能公開分享。
+  - 公告文字支援 `[文字](網址)` 與單獨網址自動轉連結。
 - **使用警語＋創作者資訊**：footer 兩欄（警語｜創作者卡片），信箱用可選取文字＋複製按鈕而非 mailto（Artifact 內 mailto 不可靠）。
 - **操作手冊 `manual.html`**：與主頁同一組色彩 token、支援深色模式；含快速開始、圖鑑、產生器、九種頁面類型對照表、YAML 結構、NotebookLM 套用步驟、常見問題、使用警語、創作者資料與授權。Artifact 發布時用 `files` 一併上傳，主頁以相對連結 `manual.html` 開啟。
 
 ## 部署
 
-- 已發布為 Claude Artifact（私人連結）；尚未推 GitHub／Pages（依偏好，實驗性新工具上線前先問）。
+- **Claude Artifact**（私人）：<https://claude.ai/artifact/K3mSFBE3qDJhGiAZMs5Auf>，用 `files` 一併上傳 `manual.html`，`capabilities` 宣告 mcp Google Drive。重新發布時省略 `capabilities` 會沿用既有宣告。
+- **GitHub Pages**（公開）：repo <https://github.com/M255525/slide-style-yaml-studio>，Actions workflow `.github/workflows/deploy-pages.yml`（比照 ecommerce-health-dashboard，push 到 `master` 即部署）→ <https://m255525.github.io/slide-style-yaml-studio/>。
+- `index.html` 開頭保留 `<!doctype html>`（GitHub Pages 需要；Artifact 發布時多餘的 doctype 會被忽略）。
 - 本機預覽 port 8823；注意 `localhost:8823` 在 Playwright 瀏覽器有其他專案殘留的 service worker，測試請改用 `127.0.0.1:8823`。
