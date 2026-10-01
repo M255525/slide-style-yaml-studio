@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>簡報風格工坊操作手冊</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* 與主頁同一組 token：灰綠工作台＋深綠重點色，單欄閱讀版面 */
+:root{
+  --bg:#EDF0EE; --surface:#FFFFFF; --ink:#17201D; --muted:#5B6763; --line:#D2D9D6;
+  --accent:#17695A; --accent-soft:#DDEDE8; --code-bg:#F4F6F5;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1513; --surface:#171F1C; --ink:#E3EAE7; --muted:#93A29D; --line:#28332F;
+    --accent:#5FC7AE; --accent-soft:#1B302A; --code-bg:#121916; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1513; --surface:#171F1C; --ink:#E3EAE7; --muted:#93A29D; --line:#28332F;
+  --accent:#5FC7AE; --accent-soft:#1B302A; --code-bg:#121916; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.8;padding-inline:20px;padding-block:28px 64px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:6px}
+a{color:var(--accent)}
+.back{font-size:14px;font-weight:700;text-decoration:none}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-top:14px}
+h1{font-size:clamp(26px,4vw,36px);line-height:1.2;margin:2px 0 6px;font-weight:900;text-wrap:balance}
+h2{font-size:19px;margin:30px 0 4px;padding-bottom:6px;border-bottom:1px solid var(--line);text-wrap:balance}
+h3{font-size:16px;margin:18px 0 0}
+p,ul,ol{margin:6px 0}
+ul,ol{padding-left:1.4em}
+li{margin:3px 0}
+code{font-family:var(--mono);font-size:.88em;background:var(--code-bg);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+pre{margin:8px 0;background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono),var(--sans);font-size:12.5px;line-height:1.6}
+.toc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin-top:8px}
+.toc ol{columns:2;column-gap:28px;margin:0}
+@media (max-width:520px){.toc ol{columns:1}}
+.note{background:var(--accent-soft);border-radius:8px;padding:12px 16px;margin:10px 0}
+.tbl{overflow-x:auto;margin:8px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface);font-weight:700}
+td code{white-space:nowrap}
+.creator{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-top:8px}
+.creator .mail{font-family:var(--mono);user-select:all}
+@media (max-width:480px){body{padding-inline:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← 回到簡報風格工坊</a>
+  <div class="eyebrow">操作手冊</div>
+  <h1>簡報風格工坊操作手冊</h1>
+  <p>簡報風格工坊幫你產生一份 YAML 格式的「簡報設計框架」。把它跟課程講義一起放進 NotebookLM，再請 NotebookLM 產生簡報，就能讓每次生成的簡報維持同一套配色、字體、圖示與版面規則。</p>
+
+  <nav class="toc" aria-label="目錄">
+    <ol>
+      <li><a href="#quick">三分鐘快速開始</a></li>
+      <li><a href="#gallery">風格圖鑑</a></li>
+      <li><a href="#builder">YAML 產生器</a></li>
+      <li><a href="#types">九種頁面類型</a></li>
+      <li><a href="#yaml">YAML 結構說明</a></li>
+      <li><a href="#notebooklm">在 NotebookLM 套用</a></li>
+      <li><a href="#tips">小技巧與常見問題</a></li>
+      <li><a href="#notice">使用警語</a></li>
+      <li><a href="#creator">創作者資料與授權</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="quick">1. 三分鐘快速開始</h2>
+  <ol>
+    <li>在「風格圖鑑」挑一張喜歡的風格卡，按「用這個風格做簡報 →」。</li>
+    <li>在「YAML 產生器」的「從 AI 課程總覽帶入大綱」選一門課，或自己填標題與各頁內容。</li>
+    <li>按右側「複製 YAML」，再按「複製說明」。</li>
+    <li>到 NotebookLM 把 YAML 貼成文字來源，產生簡報時把「自訂說明」貼進提示欄。</li>
+  </ol>
+
+  <h2 id="gallery">2. 風格圖鑑</h2>
+  <p>12 種風格取材自馬克老師做過的教學工具視覺主題，每張卡片包含：</p>
+  <ul>
+    <li><strong>縮圖</strong>：用網頁繪製的風格示意，讓你快速感受氛圍，不是 NotebookLM 的實際輸出。</li>
+    <li><strong>適合／取材／色票</strong>：建議搭配的課程類型、靈感來源工具，以及主要配色。</li>
+    <li><strong>YAML 範例（2 頁）</strong>：展開後可直接複製，包含封面與一頁內容頁，適合先試效果。</li>
+    <li><strong>用這個風格做簡報 →</strong>：切到 YAML 產生器並套用這個風格。</li>
+  </ul>
+  <p>上方「課程類型」標籤可篩選卡片，例如只看適合「數據與表單」或「政府補助」的風格。</p>
+
+  <h2 id="builder">3. YAML 產生器</h2>
+  <h3>選風格與課程</h3>
+  <p>換風格時，左側縮圖會用你的簡報標題即時預覽。選擇課程後會自動帶入大綱：封面 → 課程大綱 → 每個單元一頁 → 重點回顧，並依課程類型自動換成建議風格。之後若改用其他風格，下方會出現建議風格的標籤，點一下就能換回來。</p>
+  <div class="note">帶入課程會覆蓋目前的逐頁內容。若已經改了很多，請先按「複製 YAML」留存。</div>
+  <h3>簡報基本資料</h3>
+  <ul>
+    <li><strong>簡報標題、副標題、講師署名</strong>：寫進封面頁；講師署名也會出現在重點回顧頁。</li>
+    <li><strong>授課對象</strong>：選填，寫進 <code>global_design.audience</code>，幫 NotebookLM 調整用詞深淺。</li>
+    <li><strong>版面比例</strong>：16:9（投影）、4:3（舊式投影機）、9:16（手機直式）。</li>
+    <li><strong>文案語氣</strong>：留白則套用風格建議的語氣（灰字提示），填寫則以你的為準。</li>
+  </ul>
+  <h3>逐頁內容</h3>
+  <p>每一頁可以選頁面類型、填標題，下方方框一行寫一個重點。右側按鈕可上移、下移、刪除；最下方「＋ 新增一頁」加在最後。「清空重填」會清掉標題與所有頁面，只保留風格與講師署名。</p>
+  <p>所有修改都會自動暫存在這台瀏覽器，下次打開會接續上次的草稿。</p>
+
+  <h2 id="types">4. 九種頁面類型</h2>
+  <p>同一種頁面類型套在不同風格上，會得到不同的 <code>visual_description</code>。例如「步驟流程」在藍圖風格是「青框方塊以直角箭頭串接」，在森林小徑風格則是「沿著虛線小徑一站一站前進」。</p>
+  <div class="tbl"><table>
+    <thead><tr><th>類型</th><th>YAML type</th><th>重點欄位寫成</th><th>適合放什麼</th></tr></thead>
+    <tbody>
+      <tr><td>封面</td><td><code>Cover</code></td><td><code>tagline</code>（只取第一行）</td><td>課名、副標、講師</td></tr>
+      <tr><td>課程大綱</td><td><code>Agenda</code></td><td><code>items</code></td><td>今天的單元清單</td></tr>
+      <tr><td>概念說明</td><td><code>Concept</code></td><td><code>points</code></td><td>定義、原理、名詞解釋</td></tr>
+      <tr><td>步驟流程</td><td><code>Steps</code></td><td><code>steps</code></td><td>操作流程、SOP、階段</td></tr>
+      <tr><td>比較對照</td><td><code>Comparison</code></td><td><code>columns</code></td><td>A vs B、優缺點、多種視角</td></tr>
+      <tr><td>數據重點</td><td><code>Data</code></td><td><code>points</code></td><td>統計數字、指標、圖表</td></tr>
+      <tr><td>案例情境</td><td><code>Case</code></td><td><code>points</code></td><td>實戰範例、情境題</td></tr>
+      <tr><td>隨堂練習</td><td><code>Quiz</code></td><td><code>options</code></td><td>選擇題、配對題</td></tr>
+      <tr><td>重點回顧</td><td><code>Summary</code></td><td><code>points</code>＋<code>signature</code></td><td>帶走的三個重點</td></tr>
+    </tbody>
+  </table></div>
+  <p>從課程帶入時，系統會依大綱文字自動判斷類型：含「流程、步驟、階段、→」判為步驟流程；含「比較、vs」判為比較對照；含「數據、統計、分析、指標」判為數據重點；含「案例、實戰、範例、實作」判為案例情境；其餘為概念說明。判斷不準時直接改下拉選單即可。</p>
+
+  <h2 id="yaml">5. YAML 結構說明</h2>
+  <p>產出的 YAML 分成兩大段：<code>global_design</code> 是整份簡報共用的設計規則，<code>slides</code> 是逐頁的版面與內容。</p>
+<pre># 【課程錄製直播】簡報設計框架：AI 媒體與簡報設計
+global_design:
+  atmosphere: "線上課程錄影室、清楚易讀、講師親切陪伴"
+  voice: "講師第一人稱口語……"
+  aspect_ratio: "16:9"
+  color_scheme:
+    background: "#FFFFFF"  # 投影片白
+    highlight_color: "#2563EB"  # 重點藍
+  typography:
+    family: "黑體"
+  layout_rules:
+    icon_style: "簡潔線條圖示，數量少而大"
+
+slides:
+  p1:
+    type: "Cover"  # 封面
+    visual_description: "白色投影片，左上大標題……"
+    content:
+      title: "AI 媒體與簡報設計"
+      presenter: "馬克老師"
+  p2:
+    type: "Steps"  # 步驟流程
+    visual_description: "由左到右三到五個圖示步驟……"
+    content:
+      title: "簡報生成五步驟"
+      steps:
+        - "NotebookLM 整理講義"
+        - "Gem 設定視覺導演角色"</pre>
+  <ul>
+    <li><code>#</code> 開頭是註解，給人看的，NotebookLM 也能讀懂顏色用途。</li>
+    <li>所有文字都包在雙引號內，你輸入的引號或反斜線會自動跳脫，不會讓 YAML 格式壞掉。</li>
+    <li>想手動微調也可以：複製後在記事本修改 <code>visual_description</code> 或色碼，再貼進 NotebookLM。</li>
+  </ul>
+
+  <h2 id="notebooklm">6. 在 NotebookLM 套用</h2>
+  <ol>
+    <li>開啟 <a href="https://notebooklm.google.com/" target="_blank" rel="noopener">NotebookLM</a>，進入放有課程講義的筆記本。</li>
+    <li>按「新增來源」→「複製的文字」，貼上 YAML。建議來源名稱取「課名｜風格名稱 簡報設計框架」，方便辨認。</li>
+    <li>在「工作室」選擇產生簡報，勾選課程講義來源與這份 YAML 來源。</li>
+    <li>在自訂提示欄貼上產生器給的「自訂說明」，再按產生。</li>
+    <li>結果不滿意時，可以只換 YAML 來源（換風格），講義不用重新上傳。</li>
+  </ol>
+  <div class="note">YAML 只決定「長什麼樣子」，實際講解內容由講義來源提供。所以逐頁重點寫關鍵字即可，不必寫完整句子。</div>
+
+  <h2 id="tips">7. 小技巧與常見問題</h2>
+  <h3>生成的簡報沒有照 YAML 的配色？</h3>
+  <p>確認產生簡報時有勾選 YAML 來源，並在自訂說明中寫明「依照 YAML 設計框架」。模型偶爾會偏離，可以重新產生一次，或在說明裡補一句「背景色必須是 #xxxxxx」。</p>
+  <h3>頁數太多漏頁？</h3>
+  <p>超過 15 頁時較容易漏頁或合併頁面，建議拆成上、下兩份 YAML 分次產生。</p>
+  <h3>想用自己的課程，不在清單裡？</h3>
+  <p>課程選單選「不帶入，自己填」，或按「清空重填」後逐頁輸入。也可以先帶入一門結構相近的課程，再改標題與重點。</p>
+  <h3>草稿不見了？</h3>
+  <p>草稿只存在目前這台電腦的這個瀏覽器。換電腦、使用無痕視窗或清除瀏覽器資料後就不會保留；重要的版本請複製 YAML 另存成文字檔。</p>
+  <h3>縮圖跟 NotebookLM 產出的不一樣？</h3>
+  <p>正常。縮圖是用網頁繪製的風格示意，NotebookLM 會依 YAML 描述自行繪製，細節一定有差異。</p>
+
+  <h2 id="notice">8. 使用警語</h2>
+  <ul>
+    <li>本工具只產生簡報的版面與視覺設計框架（YAML），不會產生投影片本身，也不會呼叫任何 AI 服務。</li>
+    <li>NotebookLM 是否完全依照 YAML 呈現，取決於 Google 當下的模型版本；同一份 YAML 每次生成的結果可能不同，色碼、字體與版面僅作為設計指引。</li>
+    <li>課程大綱是 AI 課程總覽的內容快照，帶入後請自行確認是否為最新版本。</li>
+    <li>在本工具輸入的內容只暫存於你的瀏覽器，不會上傳到任何伺服器；貼進 NotebookLM 的內容則依 Google 的服務條款處理，請勿放入個資、客戶資料或公司機密。</li>
+    <li>頂部跑馬燈的公告內容來自馬克老師的公告表單，僅為資訊通知。</li>
+    <li>本工具與創作者不對使用產出內容所製作之簡報、教材或其衍生用途負責；簡報中引用的圖片、字型與商標，請自行確認授權。</li>
+  </ul>
+
+  <h2 id="creator">9. 創作者資料與授權</h2>
+  <div class="creator">
+    <strong>Mark Tsai（蔡豐全）・馬克老師</strong><br>
+    聯絡信箱：<span class="mail">tsaimark@gmail.com</span><br>
+    專長：銷售數據分析、AI 工具運用、政府補助計畫申請、創業、跨境電商
+  </div>
+  <p>本工具僅供<strong>教學、課程及個人使用</strong>，禁止未經授權公開發布、販售或商業化使用。如需其他用途，請先取得創作者授權。</p>
+
+  <p style="margin-top:2em"><a class="back" href="index.html">← 回到簡報風格工坊</a></p>
+</div>
+</body>
+</html>

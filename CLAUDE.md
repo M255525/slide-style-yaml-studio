@@ -21,6 +21,12 @@
 - 草稿存 localStorage（`ssy.draft`、`ssy.tab`），全部 try/catch。
 - 刻意不提供下載 .yaml 按鈕（Artifact 檢視器會擋下載），只提供複製。
 
+## 週邊功能（2026-10-01 補上）
+
+- **頂部跑馬燈**：獨立 IIFE，逐字沿用 `ecommerce-health-dashboard` 的實作（深色細長版型 `#111827`／`#fbbf24`、共用工作區公告 Apps Script 端點 `MARQUEE_CHECK_URL`），localStorage key `slideStyleYamlStudioMarquee`。**多了 `DEFAULT_ITEMS` 預設公告**：Claude Artifact 檢視器的 CSP 會擋掉對 script.google.com 的 fetch，沒有快取時就顯示預設三則；本機或一般網站上會抓到共用公告取代。
+- **使用警語＋創作者資訊**：footer 兩欄（警語｜創作者卡片），信箱用可選取文字＋複製按鈕而非 mailto（Artifact 內 mailto 不可靠）。
+- **操作手冊 `manual.html`**：與主頁同一組色彩 token、支援深色模式；含快速開始、圖鑑、產生器、九種頁面類型對照表、YAML 結構、NotebookLM 套用步驟、常見問題、使用警語、創作者資料與授權。Artifact 發布時用 `files` 一併上傳，主頁以相對連結 `manual.html` 開啟。
+
 ## 部署
 
 - 已發布為 Claude Artifact（私人連結）；尚未推 GitHub／Pages（依偏好，實驗性新工具上線前先問）。

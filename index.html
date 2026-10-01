@@ -108,7 +108,28 @@ textarea{resize:vertical;line-height:1.5}
 .stat b{color:var(--ink)}
 .prompt{background:var(--accent-soft);border-radius:8px;padding:12px 14px;font-size:14px;margin:0}
 .tip{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:12px;margin:0}
-footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:18px;display:flex;flex-direction:column;gap:14px}
+footer h4{margin:0 0 4px;font-size:13px;color:var(--ink)}
+footer p{margin:0;line-height:1.75;max-width:72ch}
+.foot-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px}
+@media (max-width:760px){.foot-grid{grid-template-columns:minmax(0,1fr)}}
+.creator{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.creator .mail{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.creator .mail span{font-family:var(--mono);color:var(--ink);user-select:all}
+.mini{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:5px;padding:1px 8px;cursor:pointer}
+.headlinks{display:flex;gap:10px;flex-wrap:wrap;margin-top:2px}
+.headlinks a{font-size:14px;font-weight:700;color:var(--accent);text-decoration:none;border:1px solid var(--accent);border-radius:999px;padding:4px 14px}
+.headlinks a:hover{background:var(--accent-soft)}
+a{color:var(--accent)}
+
+/* 頂部跑馬燈：共用工作區公告 Google Sheet，深色細長版型（兩種主題皆同） */
+#marqueeBar{position:fixed;top:0;left:0;right:0;height:calc(28px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);background:#111827;overflow:hidden;z-index:50;display:none;align-items:center}
+#marqueeBar.show{display:flex}
+#marqueeTrack{display:inline-block;white-space:nowrap;padding-left:100%;font-size:12.5px;font-weight:600;color:#fbbf24;animation:marquee-scroll 30s linear infinite}
+#marqueeBar:hover #marqueeTrack{animation-play-state:paused}
+body.has-marquee{padding-top:60px}
+@keyframes marquee-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion: reduce){#marqueeTrack{animation:none;padding-left:16px}}
 
 /* ========== 預覽縮圖共用 ========== */
 .pv{position:relative;aspect-ratio:16/9;max-width:100%;overflow:hidden;container-type:inline-size;border-radius:6px;isolation:isolate}
@@ -243,11 +264,13 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 @media (max-width:480px){body{padding-inline:16px}.meta{padding:12px 14px}summary{padding:11px 14px}.panel{padding:14px}}
 </style>
 
+<div id="marqueeBar" role="marquee" aria-label="最新公告"><div id="marqueeTrack"></div></div>
 <div class="wrap">
   <header>
     <div class="eyebrow">NotebookLM × YAML 簡報設計框架</div>
     <h1>簡報風格工坊</h1>
     <p>12 種簡報風格，取材自馬克老師做過的教學工具視覺主題，範例題目都來自 AI 課程總覽裡的真實課程。先在「風格圖鑑」挑風格，再到「YAML 產生器」帶入課程大綱、逐頁調整，就能得到一份可貼進 NotebookLM 的 <code>global_design</code> ＋ <code>slides</code> 設計框架。縮圖是網頁繪製的風格示意，不是 NotebookLM 的實際輸出。</p>
+    <div class="headlinks"><a href="manual.html">操作手冊</a><a href="#notice">使用警語</a></div>
   </header>
 
   <ol class="howto">
@@ -316,7 +339,21 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     </div>
   </section>
 
-  <footer>創作者：馬克老師　·　風格取材自工作區內的教學工具視覺主題　·　YAML 結構沿用〈YAML 簡報設計框架〉的 global_design ＋ slides 格式</footer>
+  <footer>
+    <div class="foot-grid">
+      <div id="notice">
+        <h4>使用警語</h4>
+        <p>本工具只產生簡報的版面與視覺設計框架（YAML），不會產生投影片本身；NotebookLM 是否完全照 YAML 呈現，取決於 Google 的模型與當下版本，同一份 YAML 每次生成的結果可能不同，色碼、字體與版面僅作為設計指引。風格縮圖是網頁繪製的示意圖，不是 NotebookLM 的實際輸出。課程大綱為 AI 課程總覽的內容快照，帶入後請自行確認是否為最新版本。所有輸入內容只存在這台瀏覽器（草稿自動暫存），不會上傳到任何伺服器；貼進 NotebookLM 的內容則依 Google 的服務條款處理，請勿放入個資或機密資料。完整說明見<a href="manual.html">操作手冊</a>。</p>
+      </div>
+      <div class="creator">
+        <h4>創作者資訊</h4>
+        <span>Mark Tsai（蔡豐全）・馬克老師</span>
+        <span>專長：銷售數據分析、AI 工具運用、政府補助計畫申請、創業、跨境電商</span>
+        <span class="mail">聯絡信箱：<span id="mailAddr">tsaimark@gmail.com</span><button class="mini" type="button" id="mailCopy">複製</button></span>
+      </div>
+    </div>
+    <p>本工具僅供教學、課程及個人使用，禁止未經授權公開發布、販售或商業化使用。風格取材自馬克老師的教學工具視覺主題，YAML 結構沿用〈YAML 簡報設計框架〉的 global_design ＋ slides 格式。</p>
+  </footer>
 </div>
 
 <script>
@@ -793,4 +830,87 @@ let startTab="gallery";
 if(location.hash==="#builder") startTab="builder";
 else{try{startTab=localStorage.getItem("ssy.tab")||"gallery"}catch(e){}}
 showTab(startTab==="builder"?"builder":"gallery");
+$("mailCopy").addEventListener("click",e=>copyText("tsaimark@gmail.com",e.currentTarget,"複製",$("mailAddr")));
+</script>
+
+<script>
+/* ================= 頂部跑馬燈（獨立運作；共用工作區既有的公告 Google Sheet） ================= */
+(function () {
+  "use strict";
+  var MARQUEE_CHECK_URL = "https://script.google.com/macros/s/AKfycbwKX0DNNbY8y4nf90BFTHtxgfqJcHHcZasRrgycl4QAe52_hkjMWSkYk4xOsqU-JPCROw/exec";
+  var STORAGE_KEY = "slideStyleYamlStudioMarquee";
+  var REFRESH_MS = 20 * 60 * 1000;
+  /* 公告端點連不上時（例如在 Claude Artifact 檢視器裡，外部連線會被擋）顯示的預設內容 */
+  var DEFAULT_ITEMS = [
+    "簡報風格工坊：12 種風格 × AI 課程大綱，一鍵產生 NotebookLM 用的 YAML 設計框架",
+    "使用方式：複製 YAML → 在 NotebookLM 貼成文字來源 → 產生簡報時同時勾選講義與 YAML",
+    "更多 AI 教學工具與課程資訊，請洽馬克老師 tsaimark@gmail.com"
+  ];
+  var bar = document.getElementById("marqueeBar");
+  var track = document.getElementById("marqueeTrack");
+  var lastKey = null;
+
+  function loadCache() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch (e) { return []; }
+  }
+  function saveCache(items) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) {}
+  }
+  function appendParsedText(container, text) {
+    var re = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    var lastIndex = 0, m;
+    while ((m = re.exec(text))) {
+      if (m.index > lastIndex) container.appendChild(document.createTextNode(text.slice(lastIndex, m.index)));
+      var a = document.createElement("a");
+      a.href = m[2]; a.textContent = m[1]; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.style.color = "inherit"; a.style.textDecoration = "underline";
+      container.appendChild(a);
+      lastIndex = re.lastIndex;
+    }
+    if (lastIndex < text.length) container.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
+  function buildTrackContent(items) {
+    var frag = document.createDocumentFragment();
+    function appendPass() {
+      items.forEach(function (item, idx) {
+        if (idx > 0) frag.appendChild(document.createTextNode("　★　"));
+        appendParsedText(frag, item);
+      });
+    }
+    appendPass();
+    frag.appendChild(document.createTextNode("　★　"));
+    appendPass();
+    return frag;
+  }
+  function render(items) {
+    if (!items || !items.length) return;
+    var key = JSON.stringify(items);
+    if (key === lastKey) return;
+    lastKey = key;
+    track.innerHTML = "";
+    track.appendChild(buildTrackContent(items));
+    bar.classList.add("show");
+    document.body.classList.add("has-marquee");
+    var width = track.scrollWidth / 2;
+    track.style.animationDuration = Math.max(width / 80, 10) + "s";
+  }
+  function fetchMarquee() {
+    try {
+      fetch(MARQUEE_CHECK_URL, { method: "POST", body: JSON.stringify({ serial: "" }) })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && Array.isArray(data.marquee) && data.marquee.length) {
+            saveCache(data.marquee);
+            render(data.marquee);
+          }
+        })
+        .catch(function () {});
+    } catch (e) {}
+  }
+
+  var cached = loadCache();
+  render(cached.length ? cached : DEFAULT_ITEMS);
+  fetchMarquee();
+  setInterval(fetchMarquee, REFRESH_MS);
+})();
 </script>
