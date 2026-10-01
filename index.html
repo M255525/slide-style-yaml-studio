@@ -2,6 +2,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>簡報風格工坊</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<meta name="theme-color" content="#17695A">
 <meta name="description" content="馬克老師的 NotebookLM 簡報風格圖鑑與 YAML 設計框架產生器">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -119,8 +123,12 @@ footer p{margin:0;line-height:1.75;max-width:72ch}
 .creator .mail span{font-family:var(--mono);color:var(--ink);user-select:all}
 .mini{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:5px;padding:1px 8px;cursor:pointer}
 .headlinks{display:flex;gap:10px;flex-wrap:wrap;margin-top:2px}
-.headlinks a{font-size:14px;font-weight:700;color:var(--accent);text-decoration:none;border:1px solid var(--accent);border-radius:999px;padding:4px 14px}
-.headlinks a:hover{background:var(--accent-soft)}
+.headlinks a,.headlinks button{font:inherit;font-size:14px;font-weight:700;color:var(--accent);background:none;text-decoration:none;border:1px solid var(--accent);border-radius:999px;padding:4px 14px;cursor:pointer;line-height:1.65}
+.headlinks a:hover,.headlinks button:hover{background:var(--accent-soft)}
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(16px);background:var(--ink);color:var(--bg);padding:10px 20px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:60;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.visits{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.visits img{height:20px;display:block}
 a{color:var(--accent)}
 
 /* 頂部跑馬燈：共用工作區公告 Google Sheet，深色細長版型（兩種主題皆同） */
@@ -271,7 +279,7 @@ body.has-marquee{padding-top:60px}
     <div class="eyebrow">NotebookLM × YAML 簡報設計框架</div>
     <h1>簡報風格工坊</h1>
     <p>12 種簡報風格，取材自馬克老師做過的教學工具視覺主題，範例題目都來自 AI 課程總覽裡的真實課程。先在「風格圖鑑」挑風格，再到「YAML 產生器」帶入課程大綱、逐頁調整，就能得到一份可貼進 NotebookLM 的 <code>global_design</code> ＋ <code>slides</code> 設計框架。縮圖是網頁繪製的風格示意，不是 NotebookLM 的實際輸出。</p>
-    <div class="headlinks"><a href="manual.html">操作手冊</a><a href="#notice">使用警語</a></div>
+    <div class="headlinks"><a href="manual.html">操作手冊</a><a href="#notice">使用警語</a><button type="button" id="installBtn">加入主畫面</button></div>
   </header>
 
   <ol class="howto">
@@ -354,8 +362,10 @@ body.has-marquee{padding-top:60px}
       </div>
     </div>
     <p>本工具僅供教學、課程及個人使用，禁止未經授權公開發布、販售或商業化使用。風格取材自馬克老師的教學工具視覺主題，YAML 結構沿用〈YAML 簡報設計框架〉的 global_design ＋ slides 格式。</p>
+    <div class="visits" id="visits"><span>訪客次數</span><img src="https://visitor-badge.laobi.icu/badge?page_id=m255525.slidestyleyamlstudio" alt="訪客次數" id="visitBadge"></div>
   </footer>
 </div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 const COURSES = [{"id":"ai-intro","t":"AI 導論與數位生產力提升","cat":"AI 基礎素養","o":["人工智慧概述：圖靈測試與 AI 發展史（1950 / 1980 / 2000 / 2016）","AI / ML / DL / 生成式 AI 的關係與神經網路原理","AI 大數據對工作的影響與三大轉型趨勢（至 2030）","破壞式創新案例與每個行業的 AI 應用專家","成為 AI 人才四步驟與 AI 企劃 5W1H","NotebookLM 輸入產出全功能介紹（語音摘要、心智圖、簡報）","Whisper / WhisperDesktop 語音轉文字實作"]},{"id":"prompt-engineering","t":"提示詞工程設計技巧","cat":"提示詞工程","o":["常用模型簡介與特色比較表","如何撰寫有效的 Prompt：明確性、角色、限制詞","CRISPE Prompt Framework 結構解析","實戰範例：減重貼文、品牌故事、職涯貼文等多領域社群文案","ChatGPT 提問助手（Chrome 外掛）與設定功能","變數與參數：{{欄位}}、下拉選單 s、複選 c、單選 r","提示詞生提示詞（All in 1）自動產生 Prompt"]},{"id":"vibe-coding-intro","t":"Vibe Coding 專案設計（框架思考入門）","cat":"Vibe Coding","o":["一般 AI 與框架思考提示語比較","矩陣圖：2x2 象限刺激思考（外食、活動選擇）","基礎框架：垂直元素（因果）、平行元素（比較）、箭形圖（流程）","企業訓練重點與課程清單吻合度分析實作","Vibe Coding 概念（Andrej Karpathy）與特點","Vibe Coding 12 類弊病與風險（代碼品質、安全、技術債等）","Google AI Studio 實作：理財顧問、外食菜單、職涯辯論小工具"]},{"id":"online-forms","t":"線上表單製作與統計","cat":"數據與表單","o":["Google 表單三大情境：市場調查、訂單報名、測驗考試","測驗模式設定：自動批改、限制次數、防作弊（隨機題序、A/B 卷）","用 NotebookLM 產生測驗題目","Apps Script 一鍵建立 Google 表單","資料決策步驟：收集→處理→分析→視覺化（ETL/ELT）","Power Query 資料清理、轉換、整合","樞紐分析表與 DAX 量值（各縣市辦訓金額、門數、收入分析）"]},{"id":"business-model-copywriting","t":"商業模式與社群文案","cat":"行銷與文案","o":["系統性創意發想：A/B 觀點轉換看待問題","矩陣圖刺激創意（日常用品×附加價值）","運用 AI 發展商業模式（孫正義字典創意法、關鍵字結合與評分）","STP 行銷框架：市場區隔、目標選擇、定位","文案提示詞庫：找素材、蒐痛點、USP、開頭技巧、懸念標題","SCQA 痛點模型撰寫文案","臉書貼文審核與 AI 文案 15 項檢核表"]},{"id":"ai-media-slides","t":"AI 媒體與簡報設計","cat":"AI 媒體製作","o":["3 層題目生成法：主題→情境（誰+在哪+做什麼）→風格","進階公式：加上用途（IG/廣告/電商/課程封面）","Nano Banana 提示詞架構與 NotebookLM→Gem→Canvas 五步驟流程","AI 影片劇本生成三組工具（宣傳片、第一人稱、提示詞/反提示詞）","常用運鏡技巧：搖攝、急搖、垂直運鏡","Suno AI 背景音樂生成、Google Flow 圖片轉影片"]},{"id":"slides-shortvideo","t":"簡報與短影音工具運用","cat":"AI 媒體製作","o":["提示詞工程複習：CRISPE、變數與參數（s/c/r）","課程設計與簡報內容生成提示詞（6 小時內訓課程範例）","圖片提示詞資料庫與 Gem 視覺導演角色設定","Napkin AI 概念圖生成與下載","Suno 配樂、Google AI Studio 文字轉聲音","Canva 實作：去背、遮罩、動態封面、轉場、AI 生圖/生影片"]},{"id":"virtual-classroom","t":"虛擬教室與會議","cat":"數位教學工具","o":["訓練與評量管理：Google Classroom 五大功能","Microsoft Teams 線上會議：建立、分組討論室、畫面分享、錄製","Teams 故障排除：連線、音訊回音、畫面分享無聲","語音轉文字：WhisperDesktop、Buzz、Google AI Studio 生成 SRT","NotebookLM 會議內容管理與工作室功能","Canva 文字轉聲音與健康飲食短影片製作"]},{"id":"ai-media-quickstart","t":"AI 媒體製作快速上手","cat":"AI 媒體製作","o":["STAGE 1 CRISPE 提示詞框架：C/R/I/S/P/E 六維度拆解與實戰範例","STAGE 2 提示詞控制台：六模組即時組裝、標籤版／精簡版／範本版三種輸出","STAGE 3 AI 影音工坊：腳本→選片→配音→配樂→合成五階段影片製作精靈","STAGE 4 AI 繪圖提示詞工廠：一次設定、四種模型格式同步輸出","STAGE 5 影片先生：多軌時間軸、濾鏡轉場、關鍵影格動畫、雙模式匯出","STAGE 6 SocialPost：一次輸入、四平台文案齊發（僅 Facebook 可直接自動發布）"]},{"id":"ai-workplace-guide","t":"運用 AI 在職場的高效應用指南","cat":"職場應用","o":["【A】提示詞變數與參數（s/c/r）實作","【A】Google 表單測驗自動化與 Apps Script 一鍵建表","【A】WhisperDesktop 會議錄音轉逐字稿與 ChatGPT/Gemini 摘要","【B】AI 簡報內容結構化收斂與轉 Markdown（Claude Skill）","【B】數據儀表板八步驟：Excel→Google 試算表→NotebookLM→Gemini→Canvas","【B】加入時間軸滑桿、KPI 卡片、趨勢圖與自動更新機制"]},{"id":"digital-transformation","t":"AI 應用與職場數位轉型實務","cat":"職場應用","o":["人工智慧概述與 AI 發展史","提示工程 vs 背景工程（向量資料庫、RAG、Chunking）","中小企業兩大落差與 WEF 未來工作趨勢","成為 AI 人才四步驟與 AI 企劃 5W1H","Whisper 語音轉文字與會議摘要整理","CRISPE 提示詞設計與 Vibe Coding 矩陣框架思考"]},{"id":"vibe-coding-project","t":"Vibe Coding 的數位專案設計","cat":"Vibe Coding","o":["Vibe Coding 概念、特點、12 類風險與五階段設計流程","三種設計圖：架構圖（樹狀）、流程圖、混合圖，Mermaid 六步驟與語法（TD/LR、節點形狀）","工具分級表 L0–L3：Canva、Gemini、AI Studio、Cursor、Codex、Claude Code、Antigravity","案例：餐飲業可行性評估計算機（損益平衡、回本週期、樂觀／持平／悲觀情境模擬）","Claude Desktop 深度教學：三大分頁、9 個常用斜線指令、Projects、Artifacts、Connectors","AI 額度為什麼燒得快：對話重送四層內容、Token 輸出比輸入貴 5 倍、Prompt Caching 省 90%"]},{"id":"ai-literacy","t":"AI 素養及工具應用","cat":"AI 基礎素養","o":["AI 四大演進方向：分散式、生成式、可信任、永續 AI","人才重構：Vibe Coding、第二大腦、轉譯方法論","組織變革：AI-First 聘用邏輯（Shopify 案例）","Gemini in Chrome：影音筆記、跨分頁調研、語意化歷史、日曆/郵件整合","七種電子郵件場景提示詞（通用/婉拒/澄清/助理/追蹤/道歉/異議）","AI Prompt Genius 與 ChatGPT 提問助手提示詞模板管理"]},{"id":"ai-efficiency","t":"應用 AI 工具提升工作效率與專業知識技能","cat":"職場應用","o":["Gemini in Chrome：影音筆記、調研分析、知識管理、行政效率","七種商務郵件場景提示詞實戰","Prompt 設計原則、CRISPE 與變數參數（s/c/r）","AI Prompt Genius 提示詞模板管理","Nano Banana Pro 圖像提示詞庫與 Gem 視覺導演","旅遊行程／景點地圖：NotebookLM→Gem→Gemini→Google My Maps（CSV）"]},{"id":"ai-innovation-service","t":"AI 時代的創新服務","cat":"職涯與策略","o":["外部環境變遷與 WEF 未來工作報告","AI 與人共事五型態與分工型態（職務舉例）","iPAS 產業人才能力鑑定與 AI 相關證照","從執行者到轉譯者：成為技術與商業的雙語者","第一性原理與課程審查 AI 評分系統實案","曼陀羅思考法、3C 分析、品牌四構面、內容行銷六連招"]},{"id":"gen-ai-talent-plan","t":"從生成式 AI 應用到人才培訓計畫擬定","cat":"職場應用","o":["生成式 AI 定義與核心技術","產業環境轉變：成本、供應鏈、人力短缺、永續與資安","AI 不再是選擇而是必須（Coinbase、Google 案例）","人才培訓計畫架構：營運目標→能力缺口→課程需求","B2C 電商範例：客訴延遲 5 Why 拆解→課程建議","課程課題擬定與發展優先順序（效益×難易矩陣）"]},{"id":"prompt-engineering-pro","t":"提示詞工程設計技巧（連續型提示詞）","cat":"提示詞工程","o":["CRISPE 框架與多領域社群貼文範例","ChatGPT 提問助手變數/參數設定指令","提示詞類型：單次型 vs 連續型","提示詞生提示詞 All-in-1","提示詞生提示詞 Separate（先生成再轉變數型）"]},{"id":"ai-slide-cards","t":"運用 AI 進行生成簡報圖卡","cat":"AI 媒體製作","o":["資料蒐集外掛：Elmo Chat、DeepSRT、Temp Mail","內容摘要提示詞（臉書貼文）","AI 簡報生成流程：Felo 生內容→ChatGPT 轉大綱→Gamma 排版","課程設計提示詞與 AI 課程大綱生成器","SVG 知識圖卡（高階主管版）製作","Napkin AI 概念圖生成與下載"]},{"id":"ai-quiz-assessment","t":"運用 AI 進行測驗設計與訓後評量","cat":"數據與表單","o":["NotebookLM／RAG 介紹與工作室功能","訓後評量設計流程：產出→篩選→建表","LLM 產出 20 題四選一測驗題","Q01 提示詞：題目轉 Google Apps Script","Apps Script 授權與表單建立","測驗設定：自動評分、限制回應、隨機排序"]},{"id":"industry-efficiency","t":"打造高效產業經營與智慧生活","cat":"AI 基礎素養","o":["刻意練習：明確目標、計畫、即時回饋、突破舒適圈","房仲銷售流程數值化與中間目標設定（PDCA）","AI＋思考框架：一般 vs 框架思考提示語、矩陣圖","矩陣圖補充：償付／重要緊急／PPM／安索夫矩陣","AI 工具：Feedly、Google Alert、Elmo Chat、NotebookLM"]},{"id":"ai-work-efficiency","t":"AI 高效工作術","cat":"提示詞工程","o":["AIGC 定義與文字／圖像／影片生成工具","Shopify AI-First 聘用案例","提示詞結構與 CRISPE 框架","連續型提示詞（逐步推進）：課程設計範例","漏斗型提示詞（收斂聚焦）：創業發想範例"]},{"id":"ai-customer-service","t":"運用 AI 智能客服提升客戶滿意度與忠誠度","cat":"職場應用","o":["AI 共事與 No-Code／Low-Code 概念","WhisperDesktop 與 Whisper Web 語音轉文字","客服 email AI 與『資深客服專員』系統提示詞","Chatbase：上傳 File/Text/Website/Q&A/Notion 訓練代理","Playground 測試與本地佈署"]},{"id":"brand-growth","t":"數位工具助攻品牌曝光與銷售成長","cat":"行銷與文案","o":["目標客戶分群與 USP 超級賣點","3C 競爭者分析與五星評論優缺點萃取","人物誌（Persona）四步驟建立與設定表","消費模式：AIDMA、AISAS、AIDEES 與行銷策略 AIDAS","文案提示詞：品牌關鍵字、客戶痛點、STP 目標客群文案","Wordware 提示語工作流（變數→條件→產圖）"]},{"id":"ai-collaboration","t":"AI 賦能的高效協作力","cat":"團隊協作","o":["線上會議與虛擬教室協作（Teams 分組討論、Classroom 作業管理）","會議錄影轉逐字稿與 AI 摘要（WhisperDesktop／Google AI Studio）","共用表單協作：問卷、報名、測驗自動化（Google 表單＋Apps Script）","Gemini in Chrome 協作：郵件草擬、行事曆排程、跨分頁調研","七種商務郵件場景提示詞","NotebookLM 團隊知識庫與互動式數據儀表板（Gemini Canvas）"]},{"id":"prompt-library-management","t":"提示詞管理術","cat":"提示詞工程","o":["提示詞管理術架構：NotebookLM 提示詞庫（類 RAG）→ Google Gem 調度 → Gemini 產出","步驟一～二：建立提示詞資料庫並匯入自訂 Gem（AI 超級提示詞專家）","步驟三：Gem 系統提示詞設計（需求分析、多組提示詞呈現、品質控管與誠實原則）","步驟四～五：用 Gemini 進行內容協作、產出與精修最終成果","實例：AI 職場工作術短影音腳本導演工作流，一次產出 5 組標題與黃金開場口白"]},{"id":"cx-ipa-kano","t":"數據化顧客體驗管理實務","cat":"數據與表單","o":["顧客體驗（CX）vs 顧客滿意度（CSAT）概念釐清與三種分析工具總覽（柏拉圖／IPA／Kano）","Google 表單問卷設計：基本資料、重要度、表現度、Kano 成對題四大區塊","Excel IPA 分析實作：文字轉數值編碼（VLOOKUP）、計算平均、散佈圖與四象限判讀","Excel Kano 分析實作：5×5 評價對照表、INDEX/MATCH 自動分類、SII／DDI 滿意度指標","柏拉圖 80/20 分析：Excel 組合圖與累計百分比繪製","IPA × Kano 整合：交叉對照排出三級改善優先順序","改善行動計畫撰寫與帶回五份可重複使用模板"]},{"id":"vibe-coding-gas-ordering","t":"運用 GAS 打造線上訂餐系統","cat":"Vibe Coding","o":["線上點餐系統開發流程總覽（辨識→生成→建庫→部署五步驟）","步驟一：上傳菜單圖片，Gemini 辨識產生 JSON 資料結構","步驟二：提示詞＋JSON，Gemini 生成 Apps Script 程式碼","步驟三：在 Google Drive 建立試算表作為資料庫","步驟四：擴充功能→Apps Script 開啟編輯器","步驟五：貼上程式碼、儲存、部署為網頁應用程式並上線","前後端分離設計與介面美學（蘋果風格、紅白黑配色）"]},{"id":"ai-prompt-system-building","t":"系統化打造你的 AI 提示詞組模型","cat":"提示詞工程","o":["Chrome 內建 Gemini：影音摘要、跨分頁調研分析、語意化歷史紀錄搜尋","工作流整合：自動新增日曆與草擬 Gmail 邀請函","七種商務郵件提示詞情境（通用／婉拒／澄清／追蹤／道歉／異議）","CRISPE Prompt Framework：C/R/I/S/P/E 六維度與範例練習","ChatGPT 提問助手 Chrome 外掛與提示詞模板變數化（{{欄位}}、下拉／複選／單選參數）","提示詞控制台一句話生成六模組、文字整理編輯器排版校對後下載 Word"]},{"id":"ai-image-video-creative","t":"AI 圖像 × 影音創作實戰班","cat":"AI 媒體製作","o":["從需求到商品主張：核心價值雙軸、核心盤點三分類、洞察真實需求三層次","SCAMPER 七個角度創新思考法：一句主題展開七種創新視角、選出前三方案","AI 繪圖提示詞工廠：概念×風格＝四種模型可用提示詞、五秒動態影片腳本延伸","AI 提示詞產生器：VIDEO（影音腳本）／TAG／APE／CO-STAR 四套框架","AI 影音工坊：腳本→選片→配音→配樂→合成五階段精靈、一鍵全自動","影片先生：多軌時間軸、濾鏡轉場、關鍵影格動畫、雙模式匯出"]},{"id":"ai-tools-comprehensive-bootcamp","t":"AI工具全方位上手實戰班","cat":"AI 媒體製作","o":["Chrome 內建 Gemini：影音摘要、跨分頁調研、行事曆與郵件自動化","七種商務郵件提示詞情境（通用／婉拒／澄清／追蹤／道歉／異議）","CRISPE Prompt Framework 與提示詞控制台六模組即時組裝","ChatGPT 提問助手 Chrome 外掛與提示詞模板變數化","STAGE 4 AI 圖片製作：AI 繪圖提示詞工廠一次產出四種模型格式","STAGE 6 社群貼文製作：SocialPost 一次輸入四平台文案齊發"]},{"id":"excel-ai-advanced","t":"Excel 進階運用：VBA 自動化與 AI 儀表板","cat":"數據與表單","o":["AI + Excel 學習路徑：公式翻譯官、數據清洗員、圖表建議員三角色","實作練習：產品自動分類、客戶聯絡資訊拆分（LEFT/RIGHT/MID）","Excel VBA 技術指南：開發人員標籤、VBA 編輯器、模組撰寫、一鍵按鈕綁定巨集","VBA 常用圖表常數與除錯技巧（動態抓取範圍、先刪舊圖表、另存 .xlsm）","數據儀表板製作八步驟：Excel→Google 試算表→NotebookLM→Gemini→Canvas","建立自動更新機制：修改試算表資料、Dashboard 自動同步"]},{"id":"ai-office-automation","t":"AI Office 文書自動化應用","cat":"職場應用","o":["Chrome 內建 Gemini：影音摘要、跨分頁調研、Imagen 3 生成簡報配圖","語意化歷史紀錄搜尋、工作流整合（行事曆／Gmail 自動化）","七種商務郵件提示詞情境與 CRISPE Prompt Framework","Chrome 外掛比較：ChatGPT 提問助手 vs AI Prompt Genius（開源、變數化、Google Sheets 同步）","WhisperDesktop 安裝與語音轉文字：下載 ggml 語言模組、匯入影片產出 SRT","會議摘要整理提示詞：內容過濾、決策歸納、行動提取、MECE 邏輯校閱"]},{"id":"excel-ai-basics","t":"Excel 結合 AI 資料整理與運用","cat":"數據與表單","o":["資料型態：結構化（Excel/CSV）、半結構化（JSON/API）、非結構化（文字/圖片/影音）","XLOOKUP 基礎查詢：依商店／產品名稱回傳對應欄位","IF 條件判斷：業績評價、庫存採購預警標籤化","SUMIFS／COUNTIFS 多條件加總與特定產品筆數分析","UNIQUE + SUMIFS 動態報表：自動列出不重複清單並即時加總","Prompt vs Skill、Gem 提示詞設計五步驟：角色、任務、背景限制、格式、迭代優化"]}];
@@ -832,6 +842,71 @@ if(location.hash==="#builder") startTab="builder";
 else{try{startTab=localStorage.getItem("ssy.tab")||"gallery"}catch(e){}}
 showTab(startTab==="builder"?"builder":"gallery");
 $("mailCopy").addEventListener("click",e=>copyText("tsaimark@gmail.com",e.currentTarget,"複製",$("mailAddr")));
+</script>
+
+<script>
+/* ================= PWA 加入主畫面＋訪客計數器（獨立運作） ================= */
+(function () {
+  "use strict";
+  var inArtifact = !!(window.claude && typeof window.claude.use === "function");
+  var btn = document.getElementById("installBtn");
+  var badge = document.getElementById("visitBadge");
+  var visits = document.getElementById("visits");
+
+  /* 訪客計數器：圖片載入失敗（例如 Artifact 檢視器擋外部圖片）就整列隱藏 */
+  function hideVisits() { if (visits) visits.hidden = true; }
+  if (badge) {
+    badge.addEventListener("error", hideVisits);
+    if (badge.complete && badge.naturalWidth === 0) hideVisits();
+  }
+
+  /* Artifact 檢視器內無法安裝成 App（不允許 service worker），按鈕不顯示 */
+  if (inArtifact) { if (btn) btn.hidden = true; return; }
+
+  var deferredPrompt = null;
+  var ua = navigator.userAgent || "";
+  var isIOSDevice = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var isMacDesktop = /Macintosh/.test(ua) && !isIOSDevice;
+  var isSafariEngine = /^((?!chrome|crios|fxios|edgios|android).)*safari/i.test(ua);
+  var isStandalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+
+  function fallbackMessage() {
+    if (isIOSDevice) return "請點畫面上的「分享」圖示，選「加入主畫面」";
+    if (isMacDesktop && isSafariEngine) return "請用選單列「檔案」→「加入 Dock」（Safari 17 以上）";
+    return "目前瀏覽器不支援安裝，或已經安裝過了";
+  }
+  function notify(msg) {
+    var toast = document.getElementById("toast");
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(notify._t);
+    notify._t = setTimeout(function () { toast.classList.remove("show"); }, 2800);
+  }
+
+  if (isStandalone && btn) btn.hidden = true;
+
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+  window.addEventListener("appinstalled", function () {
+    deferredPrompt = null;
+    if (btn) btn.hidden = true;
+    notify("已加入主畫面");
+  });
+
+  if (btn) {
+    btn.addEventListener("click", function () {
+      if (!deferredPrompt) { notify(fallbackMessage()); return; }
+      try { deferredPrompt.prompt(); deferredPrompt.userChoice.then(function () { deferredPrompt = null; }); }
+      catch (e) { notify(fallbackMessage()); }
+    });
+  }
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("service-worker.js").catch(function () {}); });
+  }
+})();
 </script>
 
 <script>
